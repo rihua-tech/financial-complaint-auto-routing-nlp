@@ -1,0 +1,15 @@
+@"
+__pycache__/
+.ipynb_checkpoints/
+.venv/
+env/
+*.pyc
+
+data/raw/
+data/processed/
+models/
+*.joblib
+*.pkl
+
+.DS_Store
+"@ > .gitignore
