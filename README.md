@@ -1,3 +1,5 @@
+[![CI](https://github.com/rihua-tech/financial-complaint-auto-routing-nlp/actions/workflows/ci.yml/badge.svg)](https://github.com/rihua-tech/financial-complaint-auto-routing-nlp/actions/workflows/ci.yml)
+
 # Financial Complaint Auto-Routing with NLP
 
 This project builds a supervised machine learning model to classify consumer financial complaints into financial product categories using the CFPB Consumer Complaint Database.
