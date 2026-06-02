@@ -1,15 +1,20 @@
-@"
 __pycache__/
 .ipynb_checkpoints/
 .venv/
 env/
 *.pyc
 
-data/raw/
-data/processed/
-models/
+# Keep data folders, but ignore actual data files
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# Keep models folder, but ignore saved model files
+models/*
+!models/.gitkeep
 *.joblib
 *.pkl
 
+# System files
 .DS_Store
-"@ > .gitignore
