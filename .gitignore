@@ -14,6 +14,9 @@ data/processed/*
 # Keep models folder, but ignore saved model files
 models/*
 !models/.gitkeep
+
+# Ignore common data and saved model files anywhere in the repository
+*.csv
 *.joblib
 *.pkl
 
