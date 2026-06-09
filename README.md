@@ -12,7 +12,13 @@ The goal is to support automated complaint routing by predicting the correct pro
 
 Dataset source: Consumer Financial Protection Bureau (CFPB) Consumer Complaint Database.
 
-The full dataset is not included in this repository. It can be downloaded from the official CFPB source or API.
+The project uses public consumer complaint narratives from the CFPB API.
+
+- Input text column: `complaint_what_happened`
+- Target label column: `product`
+- Raw local file: `data/raw/cfpb_complaints_2024_raw.csv`
+
+The raw CSV is downloaded locally by `notebooks/01_data_download.ipynb`. It is not included in this repository and should not be uploaded to GitHub. The repository ignores raw data files under `data/raw/` and ignores `*.csv` files.
 
 ## Version 1: Scikit-learn Baseline
 
