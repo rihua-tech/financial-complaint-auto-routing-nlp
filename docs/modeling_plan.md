@@ -10,9 +10,11 @@ No modeling results are reported in this document. This is a plan for future bas
 
 - Input text: `complaint_what_happened`
 - Target label: `product`
-- Data source: local CFPB complaint CSV downloaded during the completed Week 2 workflow
+- Model-development data source: local 2024 CFPB complaint CSV downloaded during the completed data-ingestion workflow.
+- Future holdout data source: local 2025 CFPB complaint CSV downloaded separately for out-of-time validation.
+- Sampling strategy: monthly-balanced + daily-stratified CFPB API sampling for each year. This reduces recency bias compared with the original late-2024 newest-first sample and improves within-month coverage compared with simple monthly newest-first sampling.
 
-Week 3 EDA and cleaning must define the final modeling dataset before baseline training starts.
+Week 3 EDA and cleaning must define the final 2024 modeling dataset before baseline training starts. The 2024 data may later be split into train, validation, and internal test sets. The 2025 data should remain separate as an out-of-time holdout dataset and should not be used during baseline model training or model selection.
 
 ## Planned Baseline Models
 
@@ -52,14 +54,15 @@ These metrics should be calculated after model outputs and routing thresholds ar
 
 ## Planned Modeling Workflow
 
-1. Complete Week 3 EDA and cleaning.
-2. Define train, validation, and test split rules.
+1. Complete Week 3 EDA and cleaning on the 2024 model-development dataset.
+2. Define 2024 train, validation, and internal test split rules.
 3. Build a TF-IDF preprocessing and modeling pipeline.
 4. Train Logistic Regression, Naive Bayes, and Linear SVM baselines.
 5. Compare metrics using a consistent evaluation set.
 6. Select a baseline candidate for deeper error analysis.
 7. Generate the results summary, error analysis, and model card.
 8. Test routing thresholds against model confidence outputs.
+9. Reserve the 2025 dataset for future out-of-time holdout testing after model selection.
 
 ## DistilBERT Future Work
 
