@@ -69,6 +69,7 @@ Scikit-learn and TF-IDF are part of the planned baseline modeling workflow. The 
 - Week 1 setup: completed.
 - Week 2 CFPB raw data download and validation: completed.
 - Dataset sampling upgrade: separate 2024 and 2025 monthly-balanced + daily-stratified samples completed locally.
+- Dataset sampling upgrade: separate 2024 and 2025 monthly-balanced + daily-stratified samples completed locally.
 - Business solution framework documentation: added as a project structure update.
 - Week 3 EDA and cleaning: planned and not completed yet.
 - Version 1 Scikit-learn baseline: planned.
@@ -108,6 +109,7 @@ Detailed monthly and daily validation results are documented in `docs/data_inges
 |-- models/                         # Local-only model artifacts, ignored except .gitkeep
 |-- notebooks/
 |   |-- 01_data_download.ipynb      # 2024/2025 CFPB raw data download and validation workflow
+|   |-- 01_data_download.ipynb      # 2024/2025 CFPB raw data download and validation workflow
 |   |-- 02_eda_cleaning.ipynb       # Planned Week 3 EDA and cleaning
 |   `-- 03_sklearn_baseline_model.ipynb
 |-- reports/
@@ -116,6 +118,7 @@ Detailed monthly and daily validation results are documented in `docs/data_inges
 |   `-- results_summary.md          # Template, pending model evaluation
 |-- src/
 |   |-- clean_text.py               # Placeholder for text cleaning utilities
+|   |-- download_data.py            # Reusable CFPB sampling, validation, and raw CSV helper functions
 |   |-- download_data.py            # Reusable CFPB sampling, validation, and raw CSV helper functions
 |   |-- predict.py                  # Lightweight prediction interface placeholder
 |   |-- routing_rules.py            # Lightweight routing policy placeholder
@@ -143,6 +146,9 @@ Longer ingestion and raw-data handling notes are documented in `docs/data_ingest
 
 ## Limitations
 
+- The current local raw datasets use monthly-balanced + daily-stratified sampling across 2024 and 2025, but they are not the full CFPB database.
+- The 2025 dataset is intended for future out-of-time validation and should not be used during baseline model training or model selection.
+- Within each daily window, CFPB API pagination still reflects the API sort order rather than random selection.
 - The current local raw datasets use monthly-balanced + daily-stratified sampling across 2024 and 2025, but they are not the full CFPB database.
 - The 2025 dataset is intended for future out-of-time validation and should not be used during baseline model training or model selection.
 - Within each daily window, CFPB API pagination still reflects the API sort order rather than random selection.
