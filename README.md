@@ -1,70 +1,74 @@
-[![CI](https://github.com/rihua-tech/financial-complaint-auto-routing-nlp/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/rihua-tech/financial-complaint-auto-routing-nlp/actions/workflows/ci.yml)
-
 # Financial Complaint Auto-Routing with NLP
 
-## Project Overview
+**AI/NLP Business Solution for Complaint Routing and Human Review**
 
-This repository is a business-oriented AI/NLP solution framework for routing consumer financial complaints to the appropriate product or operations team. It uses public CFPB consumer complaint data and focuses on classifying complaint narratives into financial product categories.
+[![CI](https://github.com/rihua-tech/financial-complaint-auto-routing-nlp/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/rihua-tech/financial-complaint-auto-routing-nlp/actions/workflows/ci.yml)
 
-The project is structured around an end-to-end business workflow:
+This project is a business-oriented AI/NLP solution that uses public CFPB consumer complaint narratives to classify financial complaints into product categories and support faster, more consistent routing decisions.
 
-`business problem -> data workflow -> model workflow -> evaluation results -> routing policy -> human review rules -> deliverables`
+`Business problem -> data ingestion -> NLP model -> evaluation -> routing recommendation -> human review`
 
-This repository is organized as a business solution framework rather than only a basic class-project layout. At the current project stage, Week 3 EDA, model training, and model performance reporting are not completed yet.
+## Project Highlights
+
+- AI/NLP business solution for financial complaint auto-routing.
+- Uses CFPB consumer complaint narratives as text input and product category as the target label.
+- Builds separate 2024 and 2025 datasets for realistic model development and future holdout testing.
+- Uses monthly-balanced + daily-stratified data ingestion to reduce recency bias.
+- Demonstrates data ingestion, validation, sampling design, ML workflow planning, and business routing design.
+- Plans Scikit-learn TF-IDF baseline models before future DistilBERT experimentation.
+- Plans confidence-based routing logic with human review for low-confidence cases.
+- Keeps raw complaint CSV files local-only and ignored by Git.
 
 ## Business Problem
 
-Financial institutions, fintech companies, customer support teams, and compliance groups receive large volumes of written complaints. Manual triage can be slow, inconsistent, and difficult to scale. A complaint may need to be routed to a mortgage, credit card, bank account, debt collection, credit reporting, or loan servicing team.
+Financial institutions, fintech companies, customer support teams, and compliance groups receive large volumes of written complaints. Manual triage can be slow, inconsistent, and difficult to scale when complaints need to be routed across mortgage, credit card, bank account, debt collection, credit reporting, or loan servicing teams.
 
-This project simulates an NLP-assisted routing workflow that predicts a complaint product category from the consumer narrative. The prediction can help prioritize routing, reduce manual review effort, and create a structured audit trail for complaint operations.
+This project simulates an NLP-assisted routing workflow that predicts a complaint product category from the consumer narrative.
 
-## Business Users
+## Business Users and Value
 
-Intended users include:
-
-- Customer support operations teams that triage inbound complaints.
-- Compliance teams that monitor complaint handling and escalation.
-- Fintech and banking product operations teams that receive routed cases.
-- Risk and analytics teams that track complaint trends and model performance.
-- Business stakeholders who need transparent reporting on automation coverage and review volume.
-
-## Business Value
+Target users include complaint operations teams, compliance teams, product operations teams, and risk analytics teams that need faster and more consistent complaint triage.
 
 The planned solution is designed to support:
 
-- Faster initial complaint triage.
-- More consistent routing recommendations across complaint channels.
-- Better visibility into complaint category volume.
-- Reduced manual effort for high-confidence, routine routing decisions.
-- Human review for low-confidence or ambiguous cases.
-- A repeatable evaluation process for model quality and operational readiness.
+- Faster initial routing for routine complaint cases.
+- More consistent product-category recommendations.
+- Reduced manual review effort for high-confidence predictions.
+- Human review for low-confidence, ambiguous, or higher-risk complaints.
+- Better reporting on complaint volume, model performance, and review workload.
 
-## Solution Overview
+## Solution Approach
+
+The project is organized as an AI/NLP business solution workflow:
+
+`Complaint text -> data validation -> NLP model -> confidence-based routing -> human review`
 
 The solution framework has three layers:
 
 1. **Data workflow**: Download and validate public CFPB complaint records, then prepare complaint narratives and product labels for analysis.
-2. **Model workflow**: Train baseline NLP classifiers using TF-IDF features and Scikit-learn models, then evaluate model performance.
-3. **Business workflow**: Convert model predictions into routing recommendations with confidence thresholds, human review rules, and reporting templates.
+2. **Model workflow**: Plan baseline NLP classifiers using TF-IDF features and Scikit-learn models, then evaluate model performance after training.
+3. **Business workflow**: Convert model predictions into routing recommendations using confidence thresholds, human review rules, and reporting templates.
 
-No trained model artifacts are currently included in the repository.
+No trained model artifacts, model scores, charts, confusion matrices, or production readiness claims are included yet.
 
-## End-to-End Workflow
+## Tech Stack
 
-1. **Business intake**: Define the routing problem, users, operational assumptions, and model decision boundaries.
-2. **Data ingestion**: Download public CFPB complaint records locally through the Week 1 and Week 2 workflow.
-3. **Data validation**: Check required fields, record counts, duplicate complaint IDs, missing narratives, and missing labels.
-4. **EDA and cleaning**: Planned for Week 3 and not completed yet.
-5. **Baseline modeling**: Planned TF-IDF models include Logistic Regression, Naive Bayes, and Linear SVM.
-6. **Evaluation**: Planned evaluation includes accuracy, macro F1, weighted F1, per-class metrics, and a confusion matrix.
-7. **Routing decision**: Planned routing rules will use predicted label, confidence, and prediction margin to decide whether to auto-route or send to human review.
-8. **Human review**: Low-confidence, ambiguous, missing, or unsupported predictions should remain in a manual review queue.
-9. **Reporting**: Results, error analysis, and model-card reports will be completed only after model training and evaluation.
+- Python
+- Pandas
+- Requests
+- Jupyter Notebook
+- Scikit-learn
+- TF-IDF
+- GitHub Actions
+- CFPB API
+
+Scikit-learn and TF-IDF are part of the planned baseline modeling workflow. The current completed work is focused on project setup, documentation, CFPB data ingestion, and validation.
 
 ## Current Status
 
 - Week 1 setup: completed.
 - Week 2 CFPB raw data download and validation: completed.
+- Dataset sampling upgrade: separate 2024 and 2025 monthly-balanced + daily-stratified samples completed locally.
 - Business solution framework documentation: added as a project structure update.
 - Week 3 EDA and cleaning: planned and not completed yet.
 - Version 1 Scikit-learn baseline: planned.
@@ -72,7 +76,7 @@ No trained model artifacts are currently included in the repository.
 
 No EDA results, cleaned dataset, feature engineering results, trained model scores, charts, confusion matrices, or completed model evaluation results are reported yet.
 
-## Dataset
+## Dataset Design Summary
 
 Dataset source: Consumer Financial Protection Bureau (CFPB) Consumer Complaint Database.
 
@@ -80,41 +84,13 @@ The project uses complaint records with public consumer complaint narratives fro
 
 - Input text column: `complaint_what_happened`
 - Target label column: `product`
-- Raw local file: `data/raw/cfpb_complaints_2024_raw.csv`
 
-The raw CSV is downloaded locally by `notebooks/01_data_download.ipynb`. It is not included in this repository and should not be uploaded to GitHub.
+| Dataset | Purpose | Rows | Date range | Notes |
+| --- | ---: | ---: | --- | --- |
+| 2024 CFPB sample | Model development | 50,000 | 2024-01-01 to 2024-12-31 | Future train/validation/internal test |
+| 2025 CFPB sample | Future holdout | 50,000 | 2025-01-01 to 2025-12-31 | Out-of-time validation |
 
-## Current Dataset Snapshot
-
-The Week 2 raw download produced the following local dataset snapshot:
-
-- Rows: 50,000
-- Raw API columns: 17
-- Product classes: 11
-- Date range: 2024-12-11 to 2024-12-31
-- Rows outside calendar year 2024: 0
-- Missing or empty complaint narratives: 0
-- Missing or empty product labels: 0
-- Duplicate `complaint_id` values: 0
-
-Important sampling note: the CFPB API returns records sorted newest first. This 50,000-row dataset is a late-2024 newest-first API sample, not a full-year random sample.
-
-## Planned Deliverables
-
-Planned deliverables include:
-
-- Business case documentation.
-- System design documentation.
-- Modeling plan for baseline NLP classifiers.
-- Week 3 EDA and cleaning notebook updates.
-- Baseline model training notebook and supporting code.
-- Results summary report after model training.
-- Error analysis report after model evaluation.
-- Model card after baseline model selection.
-- Lightweight prediction and routing framework code.
-- Final presentation or summary report for business stakeholders.
-
-Reports in `reports/` are templates until model training and evaluation are completed.
+Detailed monthly and daily validation results are documented in `docs/data_ingestion.md`.
 
 ## Repository Structure
 
@@ -126,11 +102,12 @@ Reports in `reports/` are templates until model training and evaluation are comp
 |   `-- processed/                  # Local-only processed data, ignored except .gitkeep
 |-- docs/
 |   |-- business_case.md            # Business problem, users, workflow, and limitations
+|   |-- data_ingestion.md           # CFPB data-ingestion design and validation details
 |   |-- modeling_plan.md            # Planned modeling and evaluation approach
 |   `-- system_design.md            # Architecture and data flow
 |-- models/                         # Local-only model artifacts, ignored except .gitkeep
 |-- notebooks/
-|   |-- 01_data_download.ipynb      # Completed Week 2 download workflow
+|   |-- 01_data_download.ipynb      # 2024/2025 CFPB raw data download and validation workflow
 |   |-- 02_eda_cleaning.ipynb       # Planned Week 3 EDA and cleaning
 |   `-- 03_sklearn_baseline_model.ipynb
 |-- reports/
@@ -139,7 +116,7 @@ Reports in `reports/` are templates until model training and evaluation are comp
 |   `-- results_summary.md          # Template, pending model evaluation
 |-- src/
 |   |-- clean_text.py               # Placeholder for text cleaning utilities
-|   |-- download_data.py            # Placeholder for download utilities
+|   |-- download_data.py            # Reusable CFPB sampling, validation, and raw CSV helper functions
 |   |-- predict.py                  # Lightweight prediction interface placeholder
 |   |-- routing_rules.py            # Lightweight routing policy placeholder
 |   `-- train_baseline.py           # Placeholder for baseline training utilities
@@ -149,20 +126,26 @@ Reports in `reports/` are templates until model training and evaluation are comp
 
 ## Data Safety Notes
 
-This repository preserves the existing data safety policy:
+- Raw CFPB CSV files are local-only and ignored by Git.
+- Processed data and model artifacts are local-only.
+- Do not upload raw complaint files or complaint narrative examples to GitHub.
 
-- Raw CFPB CSV files are local only and must not be committed.
-- Processed data files are local only and must not be committed.
-- CSV files are ignored globally through `.gitignore`.
-- Saved model artifacts are ignored through `.gitignore`.
-- Do not add complaint narrative samples to documentation or reports.
-- Do not upload raw CFPB complaint files to GitHub.
+Longer ingestion and raw-data handling notes are documented in `docs/data_ingestion.md`.
 
-The repository tracks only code, notebooks, documentation, templates, and placeholder files needed to reproduce the workflow.
+## Roadmap / Next Steps
+
+- Complete Week 3 EDA and cleaning on the 2024 model-development dataset.
+- Build TF-IDF + Scikit-learn baseline models.
+- Evaluate with accuracy, macro F1, weighted F1, and per-class metrics.
+- Add confidence-based routing and human review rules.
+- Use 2025 only for future out-of-time validation after model selection.
+- Consider DistilBERT only after baseline results are documented.
 
 ## Limitations
 
-- The current local raw dataset is a late-2024 newest-first API sample, not a full-year random sample.
+- The current local raw datasets use monthly-balanced + daily-stratified sampling across 2024 and 2025, but they are not the full CFPB database.
+- The 2025 dataset is intended for future out-of-time validation and should not be used during baseline model training or model selection.
+- Within each daily window, CFPB API pagination still reflects the API sort order rather than random selection.
 - Week 3 EDA and cleaning are not complete yet.
 - No baseline model has been trained yet.
 - No model scores, charts, confusion matrices, or production readiness claims are available yet.
