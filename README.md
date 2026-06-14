@@ -41,12 +41,12 @@ The planned solution is designed to support:
 
 The project is organized as an AI/NLP business solution workflow:
 
-`Complaint text -> data validation -> NLP model -> confidence-based routing -> human review`
+`Complaint text -> data validation -> NLP model -> evaluation -> confidence-based routing -> human review -> reporting deliverables`
 
 The solution framework has three layers:
 
 1. **Data workflow**: Download and validate public CFPB complaint records, then prepare complaint narratives and product labels for analysis.
-2. **Model workflow**: Plan baseline NLP classifiers using TF-IDF features and Scikit-learn models, then evaluate model performance after training.
+2. **Model workflow**: Build and evaluate baseline NLP classifiers using TF-IDF features and Scikit-learn models.
 3. **Business workflow**: Convert model predictions into routing recommendations using confidence thresholds, human review rules, and reporting templates.
 
 No trained model artifacts, model scores, charts, confusion matrices, or production readiness claims are included yet.
@@ -146,14 +146,10 @@ Longer ingestion and raw-data handling notes are documented in `docs/data_ingest
 
 ## Limitations
 
-- The current local raw datasets use monthly-balanced + daily-stratified sampling across 2024 and 2025, but they are not the full CFPB database.
-- The 2025 dataset is intended for future out-of-time validation and should not be used during baseline model training or model selection.
-- Within each daily window, CFPB API pagination still reflects the API sort order rather than random selection.
-- The current local raw datasets use monthly-balanced + daily-stratified sampling across 2024 and 2025, but they are not the full CFPB database.
-- The 2025 dataset is intended for future out-of-time validation and should not be used during baseline model training or model selection.
-- Within each daily window, CFPB API pagination still reflects the API sort order rather than random selection.
-- Week 3 EDA and cleaning are not complete yet.
-- No baseline model has been trained yet.
-- No model scores, charts, confusion matrices, or production readiness claims are available yet.
-- Complaint narratives can be sensitive, even when sourced from public data. Any production workflow would require stronger privacy, access control, retention, monitoring, and governance controls.
-- Automated routing should support, not replace, human review for ambiguous, low-confidence, regulated, or high-risk complaints.
+## Limitations
+
+- The 2024 and 2025 datasets are sampled from the CFPB database, not the full CFPB database.
+- Within each daily window, CFPB API pagination may still reflect the API sort order rather than fully random selection.
+- The 2025 dataset is reserved for future out-of-time validation and should not be used for model training or model selection.
+- Complaint narratives can be sensitive, even when sourced from public data, so any production workflow would require stronger privacy, access control, monitoring, and governance.
+- Automated routing should support human review, not replace it, especially for low-confidence, ambiguous, regulated, or high-risk complaints.
