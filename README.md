@@ -144,7 +144,6 @@ Longer ingestion and raw-data handling notes are documented in `docs/data_ingest
 - Use 2025 only for future out-of-time validation after model selection.
 - Consider DistilBERT only after baseline results are documented.
 
-## Limitations
 
 ## Limitations
 
