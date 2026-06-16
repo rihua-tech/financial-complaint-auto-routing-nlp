@@ -49,7 +49,7 @@ The solution framework has three layers:
 2. **Model workflow**: Build and evaluate baseline NLP classifiers using TF-IDF features and Scikit-learn models.
 3. **Business workflow**: Convert model predictions into routing recommendations using confidence thresholds, human review rules, and reporting templates.
 
-No trained model artifacts, model scores, charts, confusion matrices, or production readiness claims are included yet.
+No trained model artifacts, model scores, confusion matrices, routing-confidence outputs, or production readiness claims are included yet.
 
 ## Tech Stack
 
@@ -62,20 +62,26 @@ No trained model artifacts, model scores, charts, confusion matrices, or product
 - GitHub Actions
 - CFPB API
 
-Scikit-learn and TF-IDF are part of the planned baseline modeling workflow. The current completed work is focused on project setup, documentation, CFPB data ingestion, and validation.
+Scikit-learn and TF-IDF are part of the planned baseline modeling workflow. The current completed work is focused on project setup, documentation, CFPB data ingestion, validation, and Week 3 text-cleaning/label-preparation.
 
 ## Current Status
 
 - Week 1 setup: completed.
 - Week 2 CFPB raw data download and validation: completed.
 - Dataset sampling upgrade: separate 2024 and 2025 monthly-balanced + daily-stratified samples completed locally.
-- Dataset sampling upgrade: separate 2024 and 2025 monthly-balanced + daily-stratified samples completed locally.
 - Business solution framework documentation: added as a project structure update.
-- Week 3 EDA and cleaning: planned and not completed yet.
+- Week 3 text cleaning and target label preparation: completed.
+- Week 4 EDA and product category exploration: next step.
 - Version 1 Scikit-learn baseline: planned.
 - Version 2 DistilBERT transformer upgrade: future work.
 
-No EDA results, cleaned dataset, feature engineering results, trained model scores, charts, confusion matrices, or completed model evaluation results are reported yet.
+No trained model scores, confusion matrices, routing-confidence results, or completed model evaluation results are reported yet.
+
+## Current Project Proof
+
+The project has completed the setup, CFPB data download, and Week 3 text-cleaning/label-preparation stages. The image below shows an aggregate-only proof summary for the prepared 2024 CFPB modeling dataset.
+
+![Data preparation proof](reports/figures/data_preparation_proof.png)
 
 ## Dataset Design Summary
 
@@ -109,16 +115,16 @@ Detailed monthly and daily validation results are documented in `docs/data_inges
 |-- models/                         # Local-only model artifacts, ignored except .gitkeep
 |-- notebooks/
 |   |-- 01_data_download.ipynb      # 2024/2025 CFPB raw data download and validation workflow
-|   |-- 01_data_download.ipynb      # 2024/2025 CFPB raw data download and validation workflow
-|   |-- 02_eda_cleaning.ipynb       # Planned Week 3 EDA and cleaning
-|   `-- 03_sklearn_baseline_model.ipynb
+|   |-- 02_eda_cleaning.ipynb       # Week 3 text cleaning and target-label preparation
+|   `-- 03_sklearn_baseline_model.ipynb # Planned Scikit-learn baseline modeling
 |-- reports/
+|   |-- figures/
+|   |   `-- data_preparation_proof.png # Aggregate-only Week 3 data-preparation proof
 |   |-- error_analysis.md           # Template, pending model evaluation
 |   |-- model_card.md               # Template, pending model evaluation
 |   `-- results_summary.md          # Template, pending model evaluation
 |-- src/
 |   |-- clean_text.py               # Placeholder for text cleaning utilities
-|   |-- download_data.py            # Reusable CFPB sampling, validation, and raw CSV helper functions
 |   |-- download_data.py            # Reusable CFPB sampling, validation, and raw CSV helper functions
 |   |-- predict.py                  # Lightweight prediction interface placeholder
 |   |-- routing_rules.py            # Lightweight routing policy placeholder
@@ -137,7 +143,7 @@ Longer ingestion and raw-data handling notes are documented in `docs/data_ingest
 
 ## Roadmap / Next Steps
 
-- Complete Week 3 EDA and cleaning on the 2024 model-development dataset.
+- Complete Week 4 EDA and product category exploration on the 2024 model-development dataset.
 - Build TF-IDF + Scikit-learn baseline models.
 - Evaluate with accuracy, macro F1, weighted F1, and per-class metrics.
 - Add confidence-based routing and human review rules.
