@@ -79,9 +79,13 @@ No trained model scores, confusion matrices, routing-confidence results, or comp
 
 ## Current Project Proof
 
-The project has completed the setup, CFPB data download, and Week 3 text-cleaning/label-preparation stages. The image below shows an aggregate-only proof summary for the prepared 2024 CFPB modeling dataset.
+The project has completed the setup, CFPB data download, and Week 3 text-cleaning/label-preparation stages.
+
+The current proof image shows an aggregate-only summary of the prepared 2024 CFPB modeling dataset, including row count, product labels, data-quality checks, and product-category distribution.
 
 ![Data preparation proof](reports/figures/data_preparation_proof.png)
+
+Additional EDA, model evaluation, confusion matrix, and routing-confidence visuals will be added only after those stages are completed.
 
 ## Dataset Design Summary
 
