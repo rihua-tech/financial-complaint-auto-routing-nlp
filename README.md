@@ -62,7 +62,7 @@ No trained model artifacts, model scores, confusion matrices, routing-confidence
 - GitHub Actions
 - CFPB API
 
-Scikit-learn and TF-IDF are part of the planned baseline modeling workflow. The current completed work is focused on project setup, documentation, CFPB data ingestion, validation, and Week 3 text-cleaning/label-preparation.
+Scikit-learn and TF-IDF are part of the planned baseline modeling workflow. The current completed work is focused on project setup, documentation, CFPB data ingestion, validation, Week 3 text-cleaning/label-preparation, and Week 4 EDA/product distribution.
 
 ## Current Status
 
@@ -71,7 +71,7 @@ Scikit-learn and TF-IDF are part of the planned baseline modeling workflow. The 
 - Dataset sampling upgrade: separate 2024 and 2025 monthly-balanced + daily-stratified samples completed locally.
 - Business solution framework documentation: added as a project structure update.
 - Week 3 text cleaning and target label preparation: completed.
-- Week 4 EDA and product category exploration: next step.
+- Week 4 EDA and product category exploration: completed.
 - Version 1 Scikit-learn baseline: planned.
 - Version 2 DistilBERT transformer upgrade: future work.
 
@@ -79,13 +79,18 @@ No trained model scores, confusion matrices, routing-confidence results, or comp
 
 ## Current Project Proof
 
-The project has completed the setup, CFPB data download, and Week 3 text-cleaning/label-preparation stages.
+The project has completed the setup, CFPB data download, Week 3 text-cleaning/label-preparation, and Week 4 EDA stages.
 
 The current proof image shows an aggregate-only summary of the prepared 2024 CFPB modeling dataset, including row count, product labels, data-quality checks, and product-category distribution.
 
 ![Data preparation proof](reports/figures/data_preparation_proof.png)
 
-Additional EDA, model evaluation, confusion matrix, and routing-confidence visuals will be added only after those stages are completed.
+Week 4 EDA proof artifacts:
+
+- [Product distribution chart](reports/figures/product_distribution.png)
+- [Text length distribution chart](reports/figures/text_length_distribution.png)
+
+Model evaluation, confusion matrix, and routing-confidence visuals will be added only after those stages are completed.
 
 ## Dataset Design Summary
 
@@ -120,10 +125,13 @@ Detailed monthly and daily validation results are documented in `docs/data_inges
 |-- notebooks/
 |   |-- 01_data_download.ipynb      # 2024/2025 CFPB raw data download and validation workflow
 |   |-- 02_eda_cleaning.ipynb       # Week 3 text cleaning and target-label preparation
-|   `-- 03_sklearn_baseline_model.ipynb # Planned Scikit-learn baseline modeling
+|   |-- 03_sklearn_baseline_model.ipynb # Planned Scikit-learn baseline modeling
+|   `-- 04_data_quality_product_distribution.ipynb # Week 4 data quality, product distribution, and text length EDA
 |-- reports/
 |   |-- figures/
-|   |   `-- data_preparation_proof.png # Aggregate-only Week 3 data-preparation proof
+|   |   |-- data_preparation_proof.png # Aggregate-only Week 3 data-preparation proof
+|   |   |-- product_distribution.png # Week 4 product distribution chart
+|   |   `-- text_length_distribution.png # Week 4 text length distribution chart
 |   |-- error_analysis.md           # Template, pending model evaluation
 |   |-- model_card.md               # Template, pending model evaluation
 |   `-- results_summary.md          # Template, pending model evaluation
@@ -147,7 +155,6 @@ Longer ingestion and raw-data handling notes are documented in `docs/data_ingest
 
 ## Roadmap / Next Steps
 
-- Complete Week 4 EDA and product category exploration on the 2024 model-development dataset.
 - Build TF-IDF + Scikit-learn baseline models.
 - Evaluate with accuracy, macro F1, weighted F1, and per-class metrics.
 - Add confidence-based routing and human review rules.
