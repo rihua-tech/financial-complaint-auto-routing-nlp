@@ -15,7 +15,7 @@ This project is a business-oriented AI/NLP solution that uses public CFPB consum
 - Builds separate 2024 and 2025 datasets for realistic model development and future holdout testing.
 - Uses monthly-balanced + daily-stratified data ingestion to reduce recency bias.
 - Demonstrates data ingestion, validation, sampling design, ML workflow planning, and business routing design.
-- Plans Scikit-learn TF-IDF baseline models before future DistilBERT experimentation.
+- Implements the first TF-IDF + Logistic Regression baseline, with future Scikit-learn model comparisons planned.
 - Plans confidence-based routing logic with human review for low-confidence cases.
 - Keeps raw complaint CSV files local-only and ignored by Git.
 
@@ -49,7 +49,7 @@ The solution framework has three layers:
 2. **Model workflow**: Build and evaluate baseline NLP classifiers using TF-IDF features and Scikit-learn models.
 3. **Business workflow**: Convert model predictions into routing recommendations using confidence thresholds, human review rules, and reporting templates.
 
-No trained model artifacts, model scores, confusion matrices, routing-confidence outputs, or production readiness claims are included yet.
+No trained model artifacts, confusion matrix visuals, routing-confidence outputs, final model selection, or production readiness claims are included yet. Week 5 baseline metrics are summarized in `reports/results_summary.md`.
 
 ## Tech Stack
 
@@ -62,7 +62,7 @@ No trained model artifacts, model scores, confusion matrices, routing-confidence
 - GitHub Actions
 - CFPB API
 
-Scikit-learn and TF-IDF are part of the planned baseline modeling workflow. The current completed work is focused on project setup, documentation, CFPB data ingestion, validation, Week 3 text-cleaning/label-preparation, and Week 4 EDA/product distribution.
+The first baseline has been implemented using TF-IDF features and Logistic Regression in Scikit-learn. The current completed work covers project setup, documentation, CFPB data ingestion, validation, Week 3 text-cleaning/label-preparation, Week 4 EDA/product distribution, and the Week 5 TF-IDF + Logistic Regression baseline.
 
 ## Current Status
 
@@ -72,10 +72,11 @@ Scikit-learn and TF-IDF are part of the planned baseline modeling workflow. The 
 - Business solution framework documentation: added as a project structure update.
 - Week 3 text cleaning and target label preparation: completed.
 - Week 4 EDA and product category exploration: completed.
-- Version 1 Scikit-learn baseline: planned.
+- Week 5 Version 1 TF-IDF + Logistic Regression baseline: completed.
+- Week 6 Scikit-learn model comparison: next step.
 - Version 2 DistilBERT transformer upgrade: future work.
 
-No trained model scores, confusion matrices, routing-confidence results, or completed model evaluation results are reported yet.
+No trained model artifacts, confusion matrix visuals, routing-confidence outputs, final model selection, or production readiness claims are reported yet. Week 5 baseline metrics are summarized in `reports/results_summary.md`.
 
 ## Current Project Proof
 
@@ -90,7 +91,9 @@ Week 4 EDA proof artifacts:
 - [Product distribution chart](reports/figures/product_distribution.png)
 - [Text length distribution chart](reports/figures/text_length_distribution.png)
 
-Model evaluation, confusion matrix, and routing-confidence visuals will be added only after those stages are completed.
+Week 5 baseline metrics are summarized in `reports/results_summary.md`.
+
+Additional evaluation visuals, confusion matrix visuals, and routing-confidence visuals will be added only in later stages.
 
 ## Dataset Design Summary
 
@@ -125,7 +128,7 @@ Detailed monthly and daily validation results are documented in `docs/data_inges
 |-- notebooks/
 |   |-- 01_data_download.ipynb      # 2024/2025 CFPB raw data download and validation workflow
 |   |-- 02_eda_cleaning.ipynb       # Week 3 text cleaning and target-label preparation
-|   |-- 03_sklearn_baseline_model.ipynb # Planned Scikit-learn baseline modeling
+|   |-- 03_sklearn_baseline_model.ipynb # Week 5 TF-IDF + Logistic Regression baseline
 |   `-- 04_data_quality_product_distribution.ipynb # Week 4 data quality, product distribution, and text length EDA
 |-- reports/
 |   |-- figures/
@@ -134,7 +137,7 @@ Detailed monthly and daily validation results are documented in `docs/data_inges
 |   |   `-- text_length_distribution.png # Week 4 text length distribution chart
 |   |-- error_analysis.md           # Template, pending model evaluation
 |   |-- model_card.md               # Template, pending model evaluation
-|   `-- results_summary.md          # Template, pending model evaluation
+|   `-- results_summary.md          # Week 4 EDA and Week 5 baseline metrics
 |-- src/
 |   |-- clean_text.py               # Placeholder for text cleaning utilities
 |   |-- download_data.py            # Reusable CFPB sampling, validation, and raw CSV helper functions
@@ -150,14 +153,16 @@ Detailed monthly and daily validation results are documented in `docs/data_inges
 - Raw CFPB CSV files are local-only and ignored by Git.
 - Processed data and model artifacts are local-only.
 - Do not upload raw complaint files or complaint narrative examples to GitHub.
+- 2025 remains separate for future out-of-time validation.
 
 Longer ingestion and raw-data handling notes are documented in `docs/data_ingestion.md`.
 
 ## Roadmap / Next Steps
 
-- Build TF-IDF + Scikit-learn baseline models.
+- Compare additional Scikit-learn baseline classifiers in Week 6.
 - Evaluate with accuracy, macro F1, weighted F1, and per-class metrics.
-- Add confidence-based routing and human review rules.
+- Add evaluation visuals in the correct later issue.
+- Add confidence-based routing and human review rules later.
 - Use 2025 only for future out-of-time validation after model selection.
 - Consider DistilBERT only after baseline results are documented.
 
