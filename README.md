@@ -128,8 +128,8 @@ Detailed monthly and daily validation results are documented in `docs/data_inges
 |-- notebooks/
 |   |-- 01_data_download.ipynb      # 2024/2025 CFPB raw data download and validation workflow
 |   |-- 02_eda_cleaning.ipynb       # Week 3 text cleaning and target-label preparation
-|   |-- 03_sklearn_baseline_model.ipynb # Week 5 TF-IDF + Logistic Regression baseline
-|   `-- 04_data_quality_product_distribution.ipynb # Week 4 data quality, product distribution, and text length EDA
+|   |-- 03_data_quality_product_distribution.ipynb # Week 4 data quality, product distribution, and text length EDA
+|   `-- 04_sklearn_baseline_model.ipynb # Week 5 TF-IDF + Logistic Regression baseline
 |-- reports/
 |   |-- figures/
 |   |   |-- data_preparation_proof.png # Aggregate-only Week 3 data-preparation proof
