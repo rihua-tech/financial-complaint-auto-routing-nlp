@@ -1,10 +1,10 @@
 # Results Summary
 
-Status: Week 5 TF-IDF + Logistic Regression baseline completed. Future model comparison and final model selection remain pending.
+Status: Week 6 Scikit-learn baseline comparison completed. Future 2025 out-of-time validation, routing-confidence rules, and production readiness remain pending.
 
 ## Executive Summary
 
-Week 5 completed the first working baseline model for complaint product classification: TF-IDF text features with Logistic Regression. This is an initial baseline only, not final model selection.
+Week 6 compared three Scikit-learn TF-IDF baseline classifiers for complaint product classification: Logistic Regression, Multinomial Naive Bayes, and Linear SVM. Based only on the internal 2024 test split, TF-IDF + Linear SVM is the selected Version 1 baseline among these three models. This is not production readiness and does not include 2025 out-of-time validation.
 
 ## Dataset Used
 
@@ -84,26 +84,56 @@ Class imbalance note: even after filtering to classes with at least 500 complain
 
 This result is a baseline only and should not be treated as final model selection. The 2025 dataset remains separate for future out-of-time validation.
 
+## Week 6 Model Comparison: Scikit-learn Baselines
+
+Dataset used: `data/processed/cfpb_complaints_2024_cleaned.csv`
+
+Modeling scope: cleaned 2024 data only, filtered to product classes with at least 500 complaints. The 2025 holdout dataset was not loaded or used.
+
+Models compared:
+
+- TF-IDF + Logistic Regression.
+- TF-IDF + Multinomial Naive Bayes.
+- TF-IDF + Linear SVM.
+
+Train/test split summary:
+
+- Rows used after filtering: 49,196
+- Selected product classes: 8
+- Training rows: 39,356
+- Test rows: 9,840
+- Split: 80/20 train/test split with `stratify=y`, `test_size=0.20`, and `random_state=42`
+- TF-IDF settings: `max_features=50000`, `ngram_range=(1, 2)`, `min_df=2`
+
+Week 6 comparison metrics:
+
+| Model | Accuracy | Macro precision | Macro recall | Macro F1 | Weighted precision | Weighted recall | Weighted F1 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| TF-IDF + Logistic Regression | 0.8622 | 0.6803 | 0.8080 | 0.7332 | 0.8885 | 0.8622 | 0.8703 |
+| TF-IDF + Multinomial Naive Bayes | 0.8516 | 0.8485 | 0.4035 | 0.4025 | 0.8641 | 0.8516 | 0.8307 |
+| TF-IDF + Linear SVM | 0.9088 | 0.7910 | 0.7868 | 0.7877 | 0.9116 | 0.9088 | 0.9098 |
+
+Best Version 1 baseline among these three models: TF-IDF + Linear SVM.
+
+Rationale: Linear SVM produced the strongest balance of macro F1 and weighted F1 on the internal 2024 test split. Macro F1 matters because smaller product classes should not be ignored in complaint routing, while weighted F1 matters because overall routing volume is dominated by larger product classes. This selection is limited to the three Scikit-learn baselines tested here and should not be treated as production readiness, 2025 out-of-time validation, or final project model selection.
+
 ## Models Evaluated
 
 Completed so far:
 
-- TF-IDF + Logistic Regression.
-
-Planned future comparisons:
-
-- TF-IDF + Naive Bayes.
-- TF-IDF + Linear SVM.
+- TF-IDF + Logistic Regression: completed.
+- TF-IDF + Naive Bayes: completed.
+- TF-IDF + Linear SVM: completed.
 
 ## Evaluation Results
 
-Week 5 baseline test-set results are available below. Future baseline comparisons remain pending, and these results are not final model selection.
+Week 6 internal 2024 test-set results are available below. These results support a Version 1 baseline choice among three Scikit-learn models only; they are not production readiness or 2025 out-of-time validation.
 
-| Model | Accuracy | Macro F1 | Weighted F1 | Notes |
-| --- | --- | --- | --- | --- |
-| TF-IDF + Logistic Regression | 0.8622 | 0.7332 | 0.8703 | Week 5 first baseline; not final model selection |
-| TF-IDF + Naive Bayes | TBD | TBD | TBD | To be completed after training |
-| TF-IDF + Linear SVM | TBD | TBD | TBD | To be completed after training |
+| Model | Accuracy | Macro precision | Macro recall | Macro F1 | Weighted precision | Weighted recall | Weighted F1 | Notes |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| TF-IDF + Logistic Regression | 0.8622 | 0.6803 | 0.8080 | 0.7332 | 0.8885 | 0.8622 | 0.8703 | Week 5 first baseline |
+| TF-IDF + Naive Bayes | 0.8516 | 0.8485 | 0.4035 | 0.4025 | 0.8641 | 0.8516 | 0.8307 | Fast probabilistic baseline, but weak macro recall |
+| TF-IDF + Linear SVM | 0.9088 | 0.7910 | 0.7868 | 0.7877 | 0.9116 | 0.9088 | 0.9098 | Selected Version 1 baseline among these three |
 
 ## Business Routing Metrics
 
@@ -120,14 +150,16 @@ Planned metrics:
 ## Key Findings
 
 - Week 5 established the first working TF-IDF + Logistic Regression baseline.
-- The model achieved 0.8622 accuracy and 0.8703 weighted F1 on the internal 2024 test split.
-- Macro F1 was lower at 0.7332, showing that smaller classes remain more challenging.
-- These are baseline results only, not final model selection.
+- Week 6 compared three Scikit-learn TF-IDF baselines on the same internal 2024 train/test split.
+- TF-IDF + Linear SVM achieved the strongest overall comparison results: 0.9088 accuracy, 0.7877 macro F1, and 0.9098 weighted F1.
+- TF-IDF + Multinomial Naive Bayes had high macro precision but much weaker macro recall, making it less suitable as the Version 1 routing baseline.
+- The selected best Version 1 baseline is based only on the internal 2024 test split.
+- These results are not production readiness and do not include 2025 out-of-time validation.
 
 ## Recommended Next Steps
 
-- Compare additional Scikit-learn baseline classifiers in Week 6.
-- Review per-class performance and class imbalance behavior.
-- Add confusion matrix and evaluation visuals only in the correct later issue.
+- Use Week 7 for evaluation visuals and saving the selected baseline model, if Issue #7 requires those deliverables.
+- Review per-class performance and class imbalance behavior in the correct evaluation issue.
+- Add confusion matrix and evaluation visuals only if the correct later issue requires them.
 - Keep the 2025 dataset separate for future out-of-time validation.
 - Do not create routing-confidence rules until the routing issue.
