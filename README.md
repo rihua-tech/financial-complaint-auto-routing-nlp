@@ -111,6 +111,12 @@ The project uses complaint records with public consumer complaint narratives fro
 
 Detailed monthly and daily validation results are documented in `docs/data_ingestion.md`.
 
+## Data Decisions and Quality Notes
+
+This project documents data decisions and quality risks in addition to reporting accuracy and F1 scores. The detailed notes cover the CFPB source, 2024 model-development data, separation of the 2025 out-of-time holdout, text cleaning, missing narratives, product labels, class imbalance, possible label noise, limitations of historical complaint categories, and future data drift.
+
+[Data Decisions and Data Quality Notes](docs/data_decisions.md)
+
 ## Repository Structure
 
 ```text
@@ -121,6 +127,7 @@ Detailed monthly and daily validation results are documented in `docs/data_inges
 |   `-- processed/                  # Local-only processed data, ignored except .gitkeep
 |-- docs/
 |   |-- business_case.md            # Business problem, users, workflow, and limitations
+|   |-- data_decisions.md           # Data decisions, quality risks, label limitations, and drift notes
 |   |-- data_ingestion.md           # CFPB data-ingestion design and validation details
 |   |-- modeling_plan.md            # Planned modeling and evaluation approach
 |   `-- system_design.md            # Architecture and data flow
