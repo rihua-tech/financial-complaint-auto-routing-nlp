@@ -16,8 +16,9 @@ This project is a business-oriented AI/NLP solution that uses public CFPB consum
 - Uses monthly-balanced + daily-stratified data ingestion to reduce recency bias.
 - Demonstrates data ingestion, validation, sampling design, ML workflow planning, and business routing design.
 - Compares TF-IDF classifiers using Logistic Regression, Multinomial Naive Bayes, and Linear SVM.
-- Linear SVM is the selected Version 1 baseline among the three Scikit-learn models tested on the internal 2024 split.
-- Completes a row-normalized confusion matrix and aggregate category-level error analysis for the selected baseline.
+- Remediates duplicate-text leakage with conservative deduplication and group-aware 2024 splitting.
+- Linear SVM remains the selected Version 1 baseline after development-only group-aware cross-validation.
+- Completes a corrected row-normalized confusion matrix and aggregate category-level error analysis for the selected baseline.
 - Keeps confidence-based routing and human-review rules as future Week 8 work.
 - Keeps raw complaint CSV files local-only and ignored by Git.
 
@@ -51,7 +52,7 @@ The solution framework has three layers:
 2. **Model workflow**: Build and evaluate baseline NLP classifiers using TF-IDF features and Scikit-learn models.
 3. **Business workflow**: Convert model predictions into routing recommendations using confidence thresholds, human review rules, and reporting templates.
 
-Week 6 baseline selection is complete, and Week 7 aggregate evaluation is complete with a selected-baseline per-category classification report, row-normalized confusion matrix, and aggregate error analysis. The Week 7 notebook saves the selected fitted pipeline locally to `models/best_tfidf_classifier.joblib`. The artifact is intentionally excluded from Git and is not included in the repository. Routing-confidence rules and 2025 out-of-time validation remain pending, and these internal development results do not establish production readiness.
+Week 6 baseline selection and Week 7 aggregate evaluation were followed by a pre-Week 8 duplicate-leakage remediation. The corrected workflow excludes conflicting-label normalized-text groups, retains one representative from repeated same-label groups, selects the model with development-only group-aware cross-validation, and evaluates it once on a leakage-safe final internal test fold. The notebook saves the corrected fitted pipeline locally to `models/best_tfidf_classifier.joblib`. The artifact is intentionally excluded from Git and is not included in the repository. Routing-confidence rules and 2025 out-of-time validation remain pending, and these internal development results do not establish production readiness.
 
 ## Tech Stack
 
@@ -64,7 +65,7 @@ Week 6 baseline selection is complete, and Week 7 aggregate evaluation is comple
 - GitHub Actions
 - CFPB API
 
-The notebook-driven workflow is complete through Week 7: data preparation and EDA, the first Logistic Regression baseline, a three-model Scikit-learn comparison, Version 1 baseline selection, and aggregate evaluation. The `src/` directory still contains placeholders or empty scaffolding for training, prediction, and routing, so it does not yet provide a complete reusable training or inference application.
+The notebook-driven workflow is complete through the pre-Week 8 remediation: data preparation and EDA, a three-model Scikit-learn comparison, leakage-safe Version 1 selection, and corrected aggregate evaluation. The `src/` directory still contains placeholders or empty scaffolding for training, prediction, and routing, so it does not yet provide a complete reusable training or inference application.
 
 ## Current Status
 
@@ -76,7 +77,8 @@ The notebook-driven workflow is complete through Week 7: data preparation and ED
 - Week 4 EDA and product category exploration: completed.
 - Week 5 initial TF-IDF + Logistic Regression baseline: completed.
 - Week 6 Scikit-learn model comparison and Version 1 baseline selection: completed.
-- Week 7 final category-level evaluation, confusion matrix, aggregate error analysis, and local fitted pipeline: completed.
+- Week 7 selected-baseline category-level evaluation, confusion matrix, aggregate error analysis, and local fitted pipeline: completed.
+- Pre-Week 8 duplicate-text leakage remediation and corrected Version 1 evaluation: completed.
 - Week 8 decision-score/confidence-based routing and human-review rules: next step.
 - Week 9 final README and portfolio summary: planned.
 - 2025 out-of-time validation: future work in a separate dedicated task.
@@ -84,19 +86,19 @@ The notebook-driven workflow is complete through Week 7: data preparation and ED
 
 ## Version 1 Baseline Results
 
-Week 6 compared TF-IDF + Logistic Regression, TF-IDF + Multinomial Naive Bayes, and TF-IDF + Linear SVM using the same modeling scope, feature settings, and stratified internal 2024 train/test split. Linear SVM was the selected Version 1 baseline among the three Scikit-learn models tested on the internal 2024 split.
+The corrected workflow compared TF-IDF + Logistic Regression, TF-IDF + Multinomial Naive Bayes, and TF-IDF + Linear SVM using five-fold group-aware cross-validation on development data only. Linear SVM remained the selected Version 1 baseline. It was then fitted on 26,433 development rows and evaluated once on an untouched 6,609-row final internal test fold with zero normalized-text group overlap.
 
 | Metric | Value |
 | --- | ---: |
-| Accuracy | 0.9085 |
-| Macro F1 | 0.7880 |
-| Weighted F1 | 0.9095 |
+| Accuracy | 0.8712 |
+| Macro F1 | 0.7671 |
+| Weighted F1 | 0.8715 |
 
-The evaluation used 9,840 internal 2024 test rows across eight product categories. These are internal development results, not evidence of production readiness or 2025 performance. Detailed category-level results remain in the evaluation reports rather than this README.
+The original row-level split allowed 3,876 of 9,840 test rows (39.39%) to share normalized text with training, so its metrics are superseded. After excluding conflicting-label text groups and removing repeated same-label rows, 33,042 rows remained across the locked eight categories. These corrected results are internal 2024 development evidence, not proof of production readiness or 2025 performance. Detailed category-level results remain in the evaluation reports rather than this README.
 
 ## Current Project Proof
 
-The project has completed setup, CFPB data preparation, EDA, baseline comparison and selection, and aggregate evaluation through Week 7.
+The project has completed setup, CFPB data preparation, EDA, baseline comparison, duplicate-leakage remediation, and corrected aggregate evaluation before Week 8.
 
 The current proof image shows an aggregate-only summary of the prepared 2024 CFPB modeling dataset, including row count, product labels, data-quality checks, and product-category distribution.
 
@@ -107,7 +109,7 @@ Week 4 EDA proof artifacts:
 - [Product distribution chart](reports/figures/product_distribution.png)
 - [Text length distribution chart](reports/figures/text_length_distribution.png)
 
-### Week 7 Evaluation
+### Corrected Version 1 Evaluation
 
 ![Row-normalized confusion matrix](reports/figures/confusion_matrix.png)
 
@@ -155,16 +157,16 @@ This project documents data decisions and quality risks in addition to reporting
 |   |-- 01_data_download.ipynb      # 2024/2025 CFPB raw data download and validation workflow
 |   |-- 02_eda_cleaning.ipynb       # Week 3 text cleaning and target-label preparation
 |   |-- 03_data_quality_product_distribution.ipynb # Week 4 data quality, product distribution, and text length EDA
-|   `-- 04_sklearn_baseline_model.ipynb # Week 5-7 modeling, comparison, selection, and evaluation
+|   `-- 04_sklearn_baseline_model.ipynb # Leakage-safe modeling, comparison, selection, and evaluation
 |-- reports/
 |   |-- figures/
-|   |   |-- confusion_matrix.png      # Week 7 row-normalized confusion matrix
+|   |   |-- confusion_matrix.png      # Corrected leakage-safe row-normalized confusion matrix
 |   |   |-- data_preparation_proof.png # Aggregate-only Week 3 data-preparation proof
 |   |   |-- product_distribution.png # Week 4 product distribution chart
 |   |   `-- text_length_distribution.png # Week 4 text length distribution chart
-|   |-- error_analysis.md           # Completed Week 7 aggregate error analysis
+|   |-- error_analysis.md           # Corrected leakage-safe aggregate error analysis
 |   |-- model_card.md               # Model-documentation template; final synchronization pending
-|   `-- results_summary.md          # Week 4-7 EDA, model comparison, and evaluation results
+|   `-- results_summary.md          # EDA, leakage remediation, model comparison, and corrected results
 |-- src/
 |   |-- clean_text.py               # Empty scaffold for future text-cleaning utilities
 |   |-- download_data.py            # Reusable CFPB sampling, validation, and raw CSV helper functions
@@ -199,6 +201,7 @@ Longer ingestion and raw-data handling notes are documented in `docs/data_ingest
 - The 2024 and 2025 datasets are sampled from the CFPB database, not the full CFPB database.
 - Within each daily window, CFPB API pagination may still reflect the API sort order rather than fully random selection.
 - The 2025 dataset is reserved for future out-of-time validation and should not be used for model training or model selection.
+- The corrected internal evaluation removes normalized duplicate-text overlap, but it still uses a sampled 2024 development dataset.
 - Linear SVM decision scores are not calibrated probabilities, and routing thresholds have not yet been validated.
 - Smaller product categories have lower support and therefore less stable performance estimates.
 - Complaint narratives can be sensitive, even when sourced from public data, so any production workflow would require stronger privacy, access control, monitoring, and governance.
