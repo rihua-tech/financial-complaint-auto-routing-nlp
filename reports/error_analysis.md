@@ -1,69 +1,75 @@
 # Error Analysis
 
-Status: Week 7 aggregate error analysis completed for the selected Version 1 baseline.
+Status: Corrected aggregate error analysis completed for the leakage-safe Version 1 baseline evaluation.
 
 ## Purpose
 
-This report summarizes where the selected TF-IDF + Linear SVM baseline performs well and where product-category errors occur. It uses only aggregate metrics and does not include raw complaint narratives.
+This report summarizes category-level results and confusion patterns for the selected TF-IDF + Linear SVM baseline after duplicate-text leakage remediation. It contains aggregate metrics only and does not include complaint narratives or row-level predictions.
 
 ## Evaluation Context
 
+- Dataset: local processed 2024 complaints only.
+- Duplicate policy: exclude conflicting-label normalized-text groups and retain one representative from repeated same-label groups.
+- Rows after remediation: 33,042.
+- Model selection: five-fold group-aware cross-validation on 26,433 development rows only.
+- Final evaluation: one evaluation on an untouched 6,609-row internal test fold.
+- Development/test normalized-text group overlap: 0.
 - Selected model: TF-IDF + Linear SVM.
-- Evaluation data: unchanged internal test split from `data/processed/cfpb_complaints_2024_cleaned.csv`.
-- Modeling scope: cleaned 2024 complaints in product classes with at least 500 records.
-- Test rows: 9,840.
 - Product categories: 8.
-- Split: `test_size=0.20`, `random_state=42`, and `stratify=y`.
 - 2025 holdout data: not loaded or used.
 
-The test-set results are 0.9085 accuracy, 0.7880 macro F1, and 0.9095 weighted F1. These are internal development results, not production-readiness evidence or final project model selection.
+Corrected aggregate results are 0.8712 accuracy, 0.7671 macro F1, and 0.8715 weighted F1. These are internal development results, not production-readiness evidence, routing-policy validation, or 2025 performance.
 
 ## Per-Category Results
 
+The category order comes from the fitted pipeline's `classes_` attribute.
+
 | Product category | Precision | Recall | F1 | Support |
 | --- | ---: | ---: | ---: | ---: |
-| Credit reporting or other personal consumer reports | 0.9663 | 0.9484 | 0.9573 | 7,226 |
-| Debt collection | 0.7544 | 0.8312 | 0.7909 | 1,072 |
-| Credit card | 0.7452 | 0.7806 | 0.7625 | 547 |
-| Checking or savings account | 0.7554 | 0.8205 | 0.7866 | 429 |
-| Mortgage | 0.8802 | 0.8305 | 0.8547 | 177 |
-| Money transfer, virtual currency, or money service | 0.7323 | 0.6414 | 0.6838 | 145 |
-| Student loan | 0.8217 | 0.8413 | 0.8314 | 126 |
-| Vehicle loan or lease | 0.6762 | 0.6017 | 0.6368 | 118 |
+| Checking or savings account | 0.7589 | 0.7944 | 0.7763 | 428 |
+| Credit card | 0.7293 | 0.7653 | 0.7469 | 507 |
+| Credit reporting or other personal consumer reports | 0.9391 | 0.9330 | 0.9360 | 4,328 |
+| Debt collection | 0.7332 | 0.7510 | 0.7420 | 783 |
+| Money transfer, virtual currency, or money service | 0.6190 | 0.5417 | 0.5778 | 144 |
+| Mortgage | 0.8780 | 0.8136 | 0.8446 | 177 |
+| Student loan | 0.8455 | 0.8254 | 0.8353 | 126 |
+| Vehicle loan or lease | 0.6842 | 0.6724 | 0.6783 | 116 |
 
-## Categories Predicted Well
+## Categories Predicted More Reliably
 
-The three highest per-category F1 scores are:
+The three highest category F1 scores are:
 
-- Credit reporting or other personal consumer reports: 0.9573 F1 and 0.9484 recall.
-- Mortgage: 0.8547 F1 and 0.8305 recall.
-- Student loan: 0.8314 F1 and 0.8413 recall.
+- Credit reporting or other personal consumer reports: 0.9360 F1 with 4,328 test rows.
+- Mortgage: 0.8446 F1 with 177 test rows.
+- Student loan: 0.8353 F1 with 126 test rows.
 
-Mortgage and Student loan have much smaller test support than the dominant credit-reporting category, so their estimates should be interpreted with more uncertainty.
+Mortgage and Student loan have much lower support than the dominant credit-reporting category, so their results have greater sampling uncertainty.
 
 ## Confusion Patterns
 
-The row-normalized confusion matrix is available at [`reports/figures/confusion_matrix.png`](figures/confusion_matrix.png). The most important directed error patterns are:
+The corrected row-normalized confusion matrix is available at [`reports/figures/confusion_matrix.png`](figures/confusion_matrix.png). Important directed errors include:
 
-- Credit reporting or other personal consumer reports was predicted as Debt collection 239 times, representing 3.31% of its actual test cases. This is the largest error by volume.
-- Debt collection was predicted as Credit reporting or other personal consumer reports 136 times, representing 12.69% of its actual test cases.
-- Money transfer, virtual currency, or money service was predicted as Checking or savings account 39 times, representing 26.90% of its actual test cases.
-- Vehicle loan or lease was predicted as Credit reporting or other personal consumer reports 27 times, representing 22.88% of its actual test cases.
-- Credit card was predicted as Credit reporting or other personal consumer reports 48 times and as Checking or savings account 41 times, representing 8.78% and 7.50% of its actual test cases.
-- Checking or savings account was predicted as Credit card 36 times, representing 8.39% of its actual test cases.
-
-Vehicle loan or lease and Money transfer, virtual currency, or money service are the weakest categories by F1 and recall. Their lower support and concentration of errors into broader financial-product categories make them priorities for future review.
+- Credit reporting or other personal consumer reports was predicted as Debt collection 161 times, representing 3.72% of its actual test cases. This is the largest error by count.
+- Debt collection was predicted as Credit reporting or other personal consumer reports 149 times, representing 19.03% of its actual test cases.
+- Credit card was predicted as Credit reporting or other personal consumer reports 51 times, representing 10.06% of its actual test cases.
+- Money transfer, virtual currency, or money service was predicted as Checking or savings account 48 times, representing 33.33% of its actual test cases.
+- Checking or savings account was predicted as Credit card 31 times and as Money transfer, virtual currency, or money service 29 times, representing 7.24% and 6.78% of its actual test cases.
+- Vehicle loan or lease was predicted as Credit reporting or other personal consumer reports in 14.66% of its actual test cases and as Debt collection in 9.48%.
 
 ## Interpretation
 
-- Macro F1 remains below weighted F1 because performance is less consistent across the smaller categories.
-- The high weighted metrics are strongly influenced by the dominant credit-reporting category.
-- The confusion matrix describes aggregate error patterns only; no complaint narratives were reviewed or exposed.
-- Linear SVM decision scores were not converted into calibrated probabilities, and no routing-confidence threshold or human-review policy was created in Week 7.
+- Macro F1 remains below weighted F1 because performance is less consistent across smaller categories.
+- Money transfer, virtual currency, or money service has the weakest F1 (0.5778) and recall (0.5417), with one-third of its test cases predicted as Checking or savings account.
+- Vehicle loan or lease remains a lower-performing category, although its corrected F1 is 0.6783.
+- Debt collection has substantial confusion with the dominant credit-reporting category.
+- Weighted metrics remain strongly influenced by the credit-reporting category.
+- The corrected metrics are lower than the superseded row-level-split metrics, consistent with removing duplicate-text leakage and changing the evaluation cohort.
+- Linear SVM decision scores were not converted into calibrated probabilities, and no Week 8 routing threshold or human-review policy was created in this remediation.
 
 ## Recommendations
 
-- Keep the 2025 dataset separate for future out-of-time validation.
-- Review the lower-support Vehicle loan or lease and Money transfer categories before defining any automated routing policy.
-- Evaluate probability calibration or decision-score thresholds only in a dedicated routing-confidence task.
-- Continue to exclude raw complaint narratives from committed evaluation reports.
+- Use the fitted pipeline's `classes_` attribute when mapping future decision-score columns to product labels.
+- Treat Money transfer and Vehicle loan or lease as higher-risk categories during future routing-policy analysis.
+- Keep the final internal test fold separate from future routing-threshold selection.
+- Keep the 2025 dataset untouched until the dedicated out-of-time validation issue.
+- Continue excluding complaint narratives and row-level predictions from committed evaluation reports.

@@ -14,6 +14,7 @@ Model metrics do not describe every source of risk. Data selection, cleaning, la
 | Development data | 2024 data is used for training and model comparison. | A defined development period makes experiments easier to reproduce and audit. |
 | Holdout data | 2025 data is reserved for final out-of-time validation. | Keeping it separate provides a more independent test of future performance. |
 | Cleaning | Light text cleaning preserves most original meaning. | Aggressive cleaning could remove useful financial terms or context. |
+| Duplicate text | Exclude conflicting-label text groups and retain one representative from repeated same-label groups before splitting. | Identical narratives crossing development and test data can inflate internal evaluation metrics. |
 | Missing narratives | Records without usable narratives are removed from modeling data. | A text classifier cannot make a supported text-based prediction without input text. |
 | Labels | CFPB product labels are useful but not perfect ground truth. | Categories can be ambiguous, inconsistent, or different from an institution's routing structure. |
 | Imbalance | Use macro F1, weighted F1, and per-class metrics, not accuracy alone. | Overall accuracy can hide weak performance on smaller product classes. |
@@ -59,6 +60,23 @@ Text cleaning is intentionally light. The current process:
 It does not lowercase text, remove punctuation or stop words, or apply stemming or lemmatization. This preserves most original language for TF-IDF and possible future transformer modeling.
 
 This approach avoids removing useful terms or changing meaning, but it leaves spelling errors, redaction markers, boilerplate, and other noise. Cleaning rules must remain consistent between training and prediction.
+
+## Duplicate and Conflicting-Label Policy
+
+The Week 4 audit identified 16,006 exact duplicate rows in the prepared 2024 dataset. The original Week 5–7 row-level split did not keep identical texts together: 3,876 of 9,840 original test rows (39.39%) had normalized text that also appeared in training. Those original evaluation results are superseded.
+
+The corrected Version 1 workflow creates an internal grouping key by converting `clean_complaint_text` to string, trimming surrounding whitespace, collapsing repeated whitespace, and applying a deterministic SHA-256 hash. The hash is used only as a grouping identifier; complaint text and row-level hashes are not exported or committed.
+
+Before group-aware splitting, the corrected workflow applies this conservative policy:
+
+1. If a normalized-text group is associated with more than one product label, exclude the entire group from supervised Version 1 training and evaluation.
+2. If normalized text repeats with the same product label, retain one representative modeling row.
+3. Preserve the locked eight-category Version 1 scope.
+4. Verify that no normalized-text group crosses the development/final-test split or any development cross-validation fold.
+
+Across the full 2024 dataset, 74 normalized-text groups contain conflicting labels and account for 1,781 rows. Within the locked eight-category scope, 1,780 rows from those groups were excluded and 14,374 repeated same-label rows were removed. The corrected modeling data contains 33,042 rows and 33,042 unique normalized-text groups. Every locked category remains above the original 500-row modeling-scope floor.
+
+The corrected evaluation reserves one deterministic fold from `StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=42)` as the final internal test set. Model comparison uses separate group-aware cross-validation within development data only. This prevents normalized duplicate-text leakage and keeps final test metrics out of model selection.
 
 ## Missing Narratives
 
