@@ -1,96 +1,125 @@
-"""Placeholder routing policy helpers for complaint auto-routing.
+"""Decision-score routing rules for the locked Linear SVM baseline.
 
-The functions in this module are intentionally lightweight. They do not assume
-that a trained model exists, and they should be expanded after baseline model
-outputs and confidence behavior are available.
+Linear SVM decision scores and score margins are model signals, not
+probabilities. Threshold values must be selected outside this module and passed
+explicitly so that exploratory or placeholder values cannot silently become a
+routing policy.
 """
 
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from numbers import Real
 from typing import Any
 
-
-DEFAULT_ROUTING_POLICY = {
-    "auto_route_min_confidence": 0.75,
-    "auto_route_min_margin": 0.15,
-}
+import numpy as np
 
 
-def _prediction_margin(top_predictions: Sequence[Mapping[str, Any]] | None) -> float | None:
-    """Return the confidence gap between the top two predictions, if available."""
-    if not top_predictions or len(top_predictions) < 2:
-        return None
-
-    try:
-        first = float(top_predictions[0]["confidence"])
-        second = float(top_predictions[1]["confidence"])
-    except (KeyError, TypeError, ValueError):
-        return None
-
-    return first - second
+AUTO_ROUTE = "auto_route"
+HUMAN_REVIEW = "human_review"
 
 
-def route_prediction(
-    predicted_label: str | None,
-    confidence: float | None,
-    top_predictions: Sequence[Mapping[str, Any]] | None = None,
-    policy: Mapping[str, float] | None = None,
-) -> dict[str, Any]:
-    """Return a routing decision for a future model prediction.
-
-    This placeholder policy sends missing, low-confidence, or ambiguous
-    predictions to human review. It can be replaced or extended after baseline
-    model evaluation defines realistic thresholds.
-    """
-    active_policy = dict(DEFAULT_ROUTING_POLICY)
-    if policy:
-        active_policy.update(policy)
-
-    if not predicted_label:
-        return {
-            "decision": "human_review",
-            "reason": "missing_prediction",
-            "predicted_label": None,
-            "confidence": confidence,
-        }
-
-    if confidence is None:
-        return {
-            "decision": "human_review",
-            "reason": "missing_confidence",
-            "predicted_label": predicted_label,
-            "confidence": confidence,
-        }
-
-    margin = _prediction_margin(top_predictions)
-    if confidence < active_policy["auto_route_min_confidence"]:
-        return {
-            "decision": "human_review",
-            "reason": "low_confidence",
-            "predicted_label": predicted_label,
-            "confidence": confidence,
-            "margin": margin,
-        }
-
-    if margin is not None and margin < active_policy["auto_route_min_margin"]:
-        return {
-            "decision": "human_review",
-            "reason": "ambiguous_top_predictions",
-            "predicted_label": predicted_label,
-            "confidence": confidence,
-            "margin": margin,
-        }
-
+def _review_decision(reason: str) -> dict[str, Any]:
+    """Return a consistent human-review response for unusable score input."""
     return {
-        "decision": "auto_route_candidate",
-        "reason": "meets_placeholder_policy",
-        "predicted_label": predicted_label,
-        "confidence": confidence,
-        "margin": margin,
+        "routing_decision": HUMAN_REVIEW,
+        "review_reason": reason,
+        "predicted_label": None,
+        "top_score": None,
+        "second_score": None,
+        "score_margin": None,
     }
 
 
+def _valid_threshold(value: object) -> bool:
+    """Return whether a routing threshold is a finite real number."""
+    return (
+        isinstance(value, Real)
+        and not isinstance(value, bool)
+        and np.isfinite(value)
+    )
+
+
+def route_from_scores(
+    class_labels: Sequence[str] | None,
+    decision_scores: Sequence[float] | np.ndarray | None,
+    *,
+    min_top_score: float,
+    min_score_margin: float,
+) -> dict[str, Any]:
+    """Return an automatic-routing or human-review decision.
+
+    The score array must be a one-dimensional score vector aligned with the
+    fitted pipeline's ``classes_`` order. Both locked thresholds are inclusive:
+    a row is an automatic-route candidate when ``top_score >= min_top_score``
+    and ``score_margin >= min_score_margin``. Tied or invalid scores always go
+    to human review.
+    """
+    if not _valid_threshold(min_top_score) or not _valid_threshold(min_score_margin):
+        raise ValueError("Routing thresholds must be finite real numbers.")
+
+    if class_labels is None or isinstance(class_labels, (str, bytes)):
+        return _review_decision("invalid_class_labels")
+    if decision_scores is None:
+        return _review_decision("invalid_scores")
+
+    try:
+        labels = list(class_labels)
+    except TypeError:
+        return _review_decision("invalid_class_labels")
+
+    if len(labels) < 2 or any(not isinstance(label, str) or not label for label in labels):
+        return _review_decision("invalid_class_labels")
+    if len(set(labels)) != len(labels):
+        return _review_decision("invalid_class_labels")
+
+    try:
+        scores = np.asarray(decision_scores, dtype=float)
+    except (TypeError, ValueError):
+        return _review_decision("invalid_scores")
+
+    if scores.ndim != 1 or scores.size < 2:
+        return _review_decision("malformed_score_array")
+    if scores.size != len(labels):
+        return _review_decision("class_score_count_mismatch")
+    if not np.isfinite(scores).all():
+        return _review_decision("non_finite_scores")
+
+    descending_indices = np.argsort(scores, kind="stable")[::-1]
+    top_index = int(descending_indices[0])
+    second_index = int(descending_indices[1])
+    top_score = float(scores[top_index])
+    second_score = float(scores[second_index])
+    score_margin = top_score - second_score
+    predicted_label = labels[top_index]
+
+    result = {
+        "routing_decision": HUMAN_REVIEW,
+        "review_reason": None,
+        "predicted_label": predicted_label,
+        "top_score": top_score,
+        "second_score": second_score,
+        "score_margin": score_margin,
+    }
+
+    low_top_score = top_score < min_top_score
+    low_score_margin = score_margin < min_score_margin
+
+    if score_margin == 0.0:
+        result["review_reason"] = "tied_top_scores"
+    elif low_top_score and low_score_margin:
+        result["review_reason"] = "low_top_score_and_low_score_margin"
+    elif low_top_score:
+        result["review_reason"] = "low_top_score"
+    elif low_score_margin:
+        result["review_reason"] = "low_score_margin"
+    else:
+        result["routing_decision"] = AUTO_ROUTE
+        result["review_reason"] = None
+
+    return result
+
+
 def needs_human_review(routing_decision: Mapping[str, Any]) -> bool:
-    """Return True when a routing decision should remain in a review queue."""
-    return routing_decision.get("decision") != "auto_route_candidate"
+    """Return whether a routing result belongs in the human-review queue."""
+    return routing_decision.get("routing_decision") != AUTO_ROUTE

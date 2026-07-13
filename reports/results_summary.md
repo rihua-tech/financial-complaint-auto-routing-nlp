@@ -1,6 +1,6 @@
 # Results Summary
 
-Status: Pre-Week 8 duplicate-text leakage remediation completed for the selected Version 1 baseline. Week 8 routing-confidence work and 2025 out-of-time validation remain pending.
+Status: Week 8 decision-score routing and human-review analysis completed for the corrected Version 1 baseline. Dedicated 2025 out-of-time validation remains pending.
 
 ## Executive Summary
 
@@ -8,7 +8,7 @@ The original Week 5–7 row-level split allowed identical normalized complaint t
 
 The corrected workflow removes repeated same-label text rows, excludes normalized-text groups with conflicting product labels, and uses group-aware splitting throughout. Logistic Regression, Multinomial Naive Bayes, and Linear SVM were compared using five-fold group-aware cross-validation on development data only. Linear SVM remained the selected Version 1 baseline. It was then fitted on all development rows and evaluated once on the untouched final internal test fold.
 
-Corrected final internal test results are 0.8712 accuracy, 0.7671 macro F1, and 0.8715 weighted F1. These are internal 2024 development results, not production-readiness evidence, routing-policy validation, or 2025 performance.
+Corrected final internal test results are 0.8712 accuracy, 0.7671 macro F1, and 0.8715 weighted F1. Week 8 then used development out-of-fold decision scores to select an internal human-review policy before applying it once to the untouched final test set. These remain internal 2024 results, not production-readiness evidence or 2025 performance.
 
 ## Dataset and Locked Scope
 
@@ -133,7 +133,7 @@ The superseded values should not be used as the current Version 1 results.
 7. Student loan.
 8. Vehicle loan or lease.
 
-Decision-score columns in future work must be mapped using this fitted `classes_` order rather than a frequency-ordered label list.
+Week 8 decision-score columns were mapped using this fitted `classes_` order rather than a frequency-ordered label list.
 
 ## Local Model Reproducibility Metadata
 
@@ -146,16 +146,70 @@ The corrected fitted pipeline is saved locally at `models/best_tfidf_classifier.
 | Pandas | 3.0.3 |
 | NumPy | 2.4.6 |
 | Model size | 3,392,109 bytes (3.23 MB) |
-| SHA-256 | `c1e36cc04baf02a341fb9bdecf0c2ac774363eda38fb66b95975eaa54e91c55c` |
 
 ## Business Routing Metrics
 
-Not started. Week 8 will evaluate Linear SVM decision scores and score margins, define human-review rules, and measure auto-routing coverage and misroute risk. Decision scores are not calibrated probabilities.
+Week 8 evaluates whether the selected Linear SVM's top decision score and top-two score margin can identify lower-risk automatic-routing candidates. Decision scores and margins are model signals, not calibrated probabilities.
+
+### Development OOF Threshold Selection
+
+The same corrected 26,433-row development set and five `StratifiedGroupKFold` folds were reconstructed with `random_state=42`. For each fold, a cloned copy of the locked TF-IDF + Linear SVM pipeline was fitted on the fold-training rows and used to generate decision scores for the fold-validation rows. Each development row therefore received one out-of-fold prediction without using the final test set.
+
+Score columns were mapped using each fitted pipeline's `classes_` order. For every development row, the analysis calculated the predicted label, top score, second-highest score, top-two margin, and correctness. Row-level scores and predictions remained local-only and were not exported.
+
+Candidate top-score and margin thresholds were derived from two-decimal values at 2.5-percentage-point development OOF quantiles, producing 40 candidates for each threshold and 1,600 threshold pairs. A policy qualified when it met both internal project assumptions:
+
+- Maximum development OOF misroute rate: 5%.
+- Minimum development OOF coverage: 5%.
+
+Among 1,379 qualifying candidates, the policy with highest coverage was selected. Ties favored lower misroute rate and then lower thresholds. The selected thresholds were locked before any final-test decision scores were generated.
+
+| Locked routing threshold | Value |
+| --- | ---: |
+| Minimum top decision score | 0.08 |
+| Minimum top-two score margin | 0.73 |
+
+Both thresholds must pass for automatic routing. Invalid or non-finite scores, tied top scores, low top scores, and low margins require human review.
+
+The 5% development rule is an analytical assumption for this college project, not a stakeholder-approved or production-validated risk standard.
+
+### Aggregate Routing Results
+
+| Metric | Development OOF | Untouched final test |
+| --- | ---: | ---: |
+| Rows | 26,433 | 6,609 |
+| Auto-routed rows | 20,170 | 5,092 |
+| Human-review rows | 6,263 | 1,517 |
+| Auto-routing coverage | 0.7631 | 0.7705 |
+| Human-review rate | 0.2369 | 0.2295 |
+| Auto-routed accuracy | 0.9506 | 0.9503 |
+| Auto-routed misroute rate | 0.0494 | 0.0497 |
+
+The final-test policy was applied once after the thresholds were locked. Its 4.97% aggregate misroute rate is an internal holdout result, not evidence that the same rate will persist across future time periods or operating conditions.
+
+### Final-Test Category-Level Routing Results
+
+| Product category | Support | Auto-routed | Coverage | Review rate | Auto-routed accuracy | Misroute rate |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Checking or savings account | 428 | 263 | 0.6145 | 0.3855 | 0.9278 | 0.0722 |
+| Credit card | 507 | 309 | 0.6095 | 0.3905 | 0.8738 | 0.1262 |
+| Credit reporting or other personal consumer reports | 4,328 | 3,719 | 0.8593 | 0.1407 | 0.9796 | 0.0204 |
+| Debt collection | 783 | 505 | 0.6450 | 0.3550 | 0.8455 | 0.1545 |
+| Money transfer, virtual currency, or money service | 144 | 47 | 0.3264 | 0.6736 | 0.6383 | 0.3617 |
+| Mortgage | 177 | 115 | 0.6497 | 0.3503 | 0.9043 | 0.0957 |
+| Student loan | 126 | 83 | 0.6587 | 0.3413 | 0.9518 | 0.0482 |
+| Vehicle loan or lease | 116 | 51 | 0.4397 | 0.5603 | 0.8235 | 0.1765 |
+
+The highest observed category-level auto-routed misroute rates were for money transfer/virtual currency/money service, vehicle loan or lease, debt collection, and credit card. These results show that meeting a 5% aggregate development target does not guarantee a 5% rate within every category. Smaller auto-routed counts also make category estimates less stable.
+
+The aggregate visualization is available at [`reports/figures/routing_decision_score_summary.png`](figures/routing_decision_score_summary.png).
 
 ## Limitations and Next Steps
 
 - The corrected results still use an internal 2024 sample and do not establish production readiness.
 - The dominant credit-reporting category strongly influences weighted metrics.
 - Smaller categories have lower final-test support and less stable estimates.
+- Linear SVM decision scores and score margins are not calibrated probabilities.
+- The routing thresholds and 5% development rule are not production validated or business approved.
+- Aggregate routing performance masks materially higher observed misroute rates in several categories.
 - The 2025 dataset remains reserved for dedicated future out-of-time validation and was not loaded or used here.
-- Do not begin confidence-based routing work until this remediation is reviewed and accepted.
