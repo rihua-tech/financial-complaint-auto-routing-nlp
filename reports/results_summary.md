@@ -1,6 +1,6 @@
 # Results Summary
 
-Status: Week 8 decision-score routing and human-review analysis completed for the corrected Version 1 baseline. Dedicated 2025 out-of-time validation remains pending.
+Status: Corrected Version 1 internal evaluation and Week 8 decision-score routing analysis are completed and documented. Dedicated 2025 out-of-time validation remains pending.
 
 ## Executive Summary
 
@@ -203,6 +203,8 @@ The final-test policy was applied once after the thresholds were locked. Its 4.9
 The highest observed category-level auto-routed misroute rates were for money transfer/virtual currency/money service, vehicle loan or lease, debt collection, and credit card. These results show that meeting a 5% aggregate development target does not guarantee a 5% rate within every category. Smaller auto-routed counts also make category estimates less stable.
 
 The aggregate visualization is available at [`reports/figures/routing_decision_score_summary.png`](figures/routing_decision_score_summary.png).
+
+The completed intended-use, oversight, and monitoring documentation is available in the [`reports/model_card.md`](model_card.md).
 
 ## Limitations and Next Steps
 

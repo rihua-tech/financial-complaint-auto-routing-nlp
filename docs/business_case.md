@@ -2,99 +2,108 @@
 
 ## Business Problem
 
-Financial services organizations receive written complaints across products such as credit cards, mortgages, bank accounts, loans, debt collection, and credit reporting. Routing each complaint to the correct product or operations team is a high-volume triage task that can become slow, inconsistent, and difficult to audit when handled fully by hand.
+Financial services organizations receive written complaints across credit cards, mortgages, bank accounts, loans, debt collection, credit reporting, and money-transfer products. Each complaint must reach the appropriate team, but fully manual triage can be slow, inconsistent, and difficult to audit at high volume. An incorrect automated route can also delay handling or increase operational and compliance risk.
 
-This project simulates a business workflow where NLP helps classify consumer complaint narratives into financial product categories for routing support.
+This project demonstrates an internal NLP prototype that classifies a public CFPB complaint narrative into one of eight product categories and applies routing rules that recommend either an automatic route or human review.
 
 ## Intended Users
 
-Intended users include:
+The prototype is relevant to:
 
-- Customer support operations teams responsible for intake and triage.
-- Product operations teams that receive routed complaints.
-- Compliance teams that monitor complaint handling and escalation.
-- Risk and analytics teams that evaluate complaint patterns and model behavior.
-- Business managers who need visibility into routing volume, manual review workload, and automation coverage.
+- complaint intake and customer-support operations;
+- product teams that receive routed complaints;
+- compliance teams that oversee complaint handling and escalation;
+- risk and analytics teams that evaluate model behavior; and
+- managers who need aggregate visibility into routing and review volumes.
 
-## Why Complaint Routing Matters
+It is a decision-support prototype, not a production service or replacement for existing review obligations.
 
-Complaint routing matters because delays or misroutes can create operational backlogs, poor customer experiences, inconsistent handling, and compliance risk. A structured routing process can help teams:
+## Completed Internal Prototype
 
-- Identify the likely product area quickly.
-- Prioritize complaints that need specialized review.
-- Track routing decisions and review outcomes.
-- Report complaint volume by product category.
-- Create feedback loops for improving operations.
+The completed Version 1 workflow:
 
-## Operational Workflow
+1. validates a 50,000-row public CFPB sample from 2024;
+2. applies light text cleaning and data-quality checks;
+3. removes duplicate-text leakage and conflicting-label text groups;
+4. uses group-aware development and final-test partitions with zero normalized-text overlap;
+5. compares TF-IDF pipelines with Logistic Regression, Multinomial Naive Bayes, and Linear SVM;
+6. selects Linear SVM using five-fold development cross-validation and Macro F1;
+7. evaluates the selected pipeline on a 6,609-row final internal test fold; and
+8. applies locked decision-score and score-margin rules to recommend automatic routing or human review.
 
-The planned operational workflow is:
+The fitted pipeline is stored only as a local, Git-ignored artifact. A deployed prediction service is not implemented.
 
-1. A complaint narrative enters the intake queue.
-2. The text is validated for minimum usable content.
-3. A classification model predicts the most likely product category.
-4. A routing policy evaluates prediction confidence and ambiguity.
-5. High-confidence predictions may receive an auto-routing recommendation.
-6. Low-confidence, missing, ambiguous, or unsupported predictions move to human review.
-7. Review outcomes are logged for monitoring and future model improvement.
-8. Summary reports track model performance and business impact.
+## Verified Model Results
 
-This repository currently contains framework documentation and placeholders for this workflow. It does not yet contain a trained model.
+| Internal 2024 metric | Value |
+| --- | ---: |
+| Accuracy | 0.8712 |
+| Macro F1 | 0.7671 |
+| Weighted F1 | 0.8715 |
 
-## How NLP Supports Complaint Routing
+The difference between Macro F1 and Weighted F1 reflects class imbalance and less consistent performance across smaller categories. These metrics describe the internal 2024 sample only.
 
-NLP supports complaint routing by converting unstructured complaint narratives into model features and predicting a structured product category. The first planned baseline uses TF-IDF features with traditional Scikit-learn classifiers. These models are appropriate for a transparent baseline because they are comparatively fast to train, easy to evaluate, and easier to explain than larger transformer models.
+## Routing Policy and Business Interpretation
 
-The NLP component is intended to produce routing recommendations, not final business decisions.
+The routing policy requires both:
 
-## Human-in-the-Loop Review Concept
+- top Linear SVM decision score of at least 0.08; and
+- top-two score margin of at least 0.73.
 
-Human review remains part of the planned workflow. A complaint should be routed to manual review when:
+Decision scores and margins are model signals, not calibrated probabilities.
 
-- The model confidence is below the auto-routing threshold.
-- The top predictions are too close together.
-- Required input text is missing or too short.
-- The predicted category is unsupported by downstream operations.
-- Business rules require review because of risk, escalation, or compliance concerns.
+| Final-test routing metric | Value |
+| --- | ---: |
+| Auto-routing coverage | 77.05% |
+| Human-review rate | 22.95% |
+| Auto-routed accuracy | 95.03% |
+| Auto-routed misroute rate | 4.97% |
 
-Human review decisions can later be used as feedback for monitoring and model improvement.
+The results show that the policy can separate a larger lower-observed-risk subset from cases requiring review within this internal test. They do not guarantee a 77.05% reduction in manual workload: an operating organization may require additional review, exception handling, audits, or category-specific controls.
 
-## Success Metrics to Be Reported Later
+The aggregate 4.97% misroute rate also does not apply uniformly. Money transfer/virtual currency/money service, Vehicle loan or lease, Debt collection, and Credit card showed higher observed category-level risk. Several smaller categories have limited support, so their estimates are less stable.
 
-Model quality metrics to report after baseline training:
+## Human-in-the-Loop Role
 
-- Accuracy.
-- Macro F1.
-- Weighted F1.
-- Per-class precision, recall, and F1.
-- Confusion matrix.
+A human reviewer remains responsible when:
 
-Business-oriented metrics to report after routing policy testing:
+- either routing threshold fails;
+- model scores are invalid, tied, or malformed;
+- the narrative is missing, ambiguous, or describes multiple products;
+- a future business policy requires category-specific review for a category with higher observed routing risk;
+- the complaint is escalated or compliance-sensitive; or
+- business policy requires manual review.
 
-- Auto-routing coverage.
-- Human review rate.
-- Low-confidence case volume.
-- Top-3 prediction usefulness.
-- Misroute risk by product category.
-- Review workload reduction estimate.
+Future operational design would need documented review procedures, override reasons, escalation rules, and quality feedback. Those processes are not implemented by this repository.
 
-These metrics are planned only. No results are reported until model training and evaluation are complete.
+## Potential Value
+
+Subject to future validation and governance, a similar workflow could support:
+
+- more consistent initial product-category recommendations;
+- future policy experimentation with category-specific review for ambiguous or higher-risk complaints;
+- aggregate visibility into model errors and review volumes; and
+- auditable experimentation with routing rules.
+
+The project does not claim realized cost savings, guaranteed workload reduction, deployment, regulatory approval, or production readiness.
 
 ## Limitations and Production Considerations
 
-Current limitations:
+- The data is a public CFPB sample, not institution-specific intake data.
+- The corrected evaluation is internal to 2024; the protected 2025 holdout was not used.
+- Historical product labels may be ambiguous or differ from an organization's ownership structure.
+- Class imbalance and small category samples make some estimates less stable.
+- Linear SVM decision scores are not probabilities.
+- The routing thresholds are project assumptions, not stakeholder-approved operating limits.
+- No fairness study, calibration study, production workload study, or live monitoring has been completed.
+- Complaint narratives may contain sensitive information.
 
-- The current local dataset is a late-2024 newest-first CFPB API sample.
-- EDA, cleaning, baseline training, and evaluation are not complete in this branch.
-- No trained model artifact is available in the repository.
-- Public CFPB narratives may differ from private institution-specific complaint channels.
+Before production consideration, the workflow would require out-of-time validation, privacy and security review, compliance and governance approval, category-specific error-cost decisions, human-review procedures, monitoring, drift controls, secure storage, audit logging, and incident-response ownership.
 
-Production considerations:
+## Next Business Decisions
 
-- Privacy review and access control for complaint text.
-- Data retention and deletion policies.
-- Bias, fairness, and performance monitoring across complaint categories.
-- Human review procedures for ambiguous or high-risk cases.
-- Audit logging for routing recommendations and review overrides.
-- Monitoring for data drift and model performance degradation.
-- Clear ownership for model updates, incident response, and compliance review.
+1. Complete a pre-specified 2025 out-of-time validation without changing the locked Version 1 design based on holdout outcomes.
+2. Define category-specific error costs and acceptable routing policies with stakeholders.
+3. Decide which categories, if any, can receive automatic-routing recommendations.
+4. Establish human-review, escalation, override, and audit procedures.
+5. Evaluate operational impact in a controlled environment before making workload or value claims.
