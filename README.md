@@ -1,208 +1,194 @@
 # Financial Complaint Auto-Routing with NLP
 
-**AI/NLP Business Solution for Complaint Routing and Human Review**
+**Leakage-safe text classification and human-in-the-loop routing for public CFPB complaints**
 
 [![CI](https://github.com/rihua-tech/financial-complaint-auto-routing-nlp/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/rihua-tech/financial-complaint-auto-routing-nlp/actions/workflows/ci.yml)
 
-This project is a business-oriented AI/NLP solution that uses public CFPB consumer complaint narratives to classify financial complaints into product categories and support faster, more consistent routing decisions.
+## Project Overview
 
-`Business problem -> data ingestion -> NLP model -> evaluation -> routing recommendation -> human review`
+Financial institutions, fintech firms, and complaint operations teams receive written complaints that must be routed to the appropriate product team. Manual triage can be slow and inconsistent, while an incorrect automated route can delay review or create operational risk.
 
-## Project Highlights
+This repository implements an internal Version 1 NLP prototype that predicts one of eight CFPB product categories from a public consumer complaint narrative. The model supplies a routing recommendation; a decision-score policy sends lower-signal or ambiguous cases to human review. It does not make legal or factual determinations and is not a deployed production service.
 
-- AI/NLP business solution for financial complaint auto-routing.
-- Uses CFPB consumer complaint narratives as text input and product category as the target label.
-- Builds separate 2024 and 2025 datasets for realistic model development and future holdout testing.
-- Uses monthly-balanced + daily-stratified data ingestion to reduce recency bias.
-- Demonstrates data ingestion, validation, sampling design, ML workflow planning, and business routing design.
-- Compares TF-IDF classifiers using Logistic Regression, Multinomial Naive Bayes, and Linear SVM.
-- Remediates duplicate-text leakage with conservative deduplication and group-aware 2024 splitting.
-- Linear SVM remains the selected Version 1 baseline after development-only group-aware cross-validation.
-- Completes a corrected row-normalized confusion matrix and aggregate category-level error analysis for the selected baseline.
-- Keeps confidence-based routing and human-review rules as future Week 8 work.
-- Keeps raw complaint CSV files local-only and ignored by Git.
+## Version 1 at a Glance
 
-## Business Problem
+| Item | Verified result |
+| --- | --- |
+| Data source | Public CFPB consumer complaint narratives |
+| Development period | 2024 only |
+| Protected future holdout | Separate 2025 CFPB sample, 50,000 rows; reserved for future out-of-time validation and not loaded or used for Version 1 |
+| Validated input sample | 50,000 rows |
+| Rows after duplicate-leakage remediation | 33,042 |
+| Development / final internal test | 26,433 / 6,609 |
+| Product categories | 8 |
+| Development/test normalized-text overlap | 0 groups |
+| Selected model | TF-IDF + Linear SVM |
+| Final internal-test accuracy | 0.8712 |
+| Final internal-test Macro F1 | 0.7671 |
+| Final internal-test Weighted F1 | 0.8715 |
 
-Financial institutions, fintech companies, customer support teams, and compliance groups receive large volumes of written complaints. Manual triage can be slow, inconsistent, and difficult to scale when complaints need to be routed across mortgage, credit card, bank account, debt collection, credit reporting, or loan servicing teams.
+These are internal 2024 results. They do not establish production readiness or performance on future data.
 
-This project simulates an NLP-assisted routing workflow that predicts a complaint product category from the consumer narrative.
+## Business Users and Workflow
 
-## Business Users and Value
+The prototype is relevant to complaint intake, product operations, compliance operations, and risk analytics teams. It demonstrates this decision-support flow:
 
-Target users include complaint operations teams, compliance teams, product operations teams, and risk analytics teams that need faster and more consistent complaint triage.
+`Complaint narrative -> validation -> text preparation -> model recommendation -> routing rules -> automatic-route recommendation or human review -> aggregate reporting`
 
-The planned solution is designed to support:
+Human review remains central. The implemented routing rules assign complaints to review when either score threshold fails or model signals are tied, invalid, non-finite, or otherwise unusable. Higher-risk categories are not automatically assigned to review by the current code; a future business policy may add category-specific review controls.
 
-- Faster initial routing for routine complaint cases.
-- More consistent product-category recommendations.
-- Reduced manual review effort for high-confidence predictions.
-- Human review for low-confidence, ambiguous, or higher-risk complaints.
-- Better reporting on complaint volume, model performance, and review workload.
+## Completed Technical Approach
 
-## Solution Approach
+1. Downloaded and validated a monthly-balanced, daily-stratified 2024 CFPB sample.
+2. Applied light text cleaning while preserving most complaint language.
+3. Audited missing values, text-length outliers, duplicates, class balance, and label conflicts.
+4. Removed normalized-text groups with conflicting labels and kept one representative from repeated same-label groups.
+5. Used group-aware splitting so normalized duplicate text could not cross development and final-test partitions.
+6. Compared Scikit-learn pipelines using TF-IDF with Logistic Regression, Multinomial Naive Bayes, and Linear SVM.
+7. Selected Linear SVM using five-fold group-aware cross-validation on development data only.
+8. Evaluated the selected pipeline once on the 6,609-row final internal test fold.
+9. Selected routing thresholds from development out-of-fold decision scores, then applied the locked policy once to the final test set.
+10. Added tested routing-rule utilities and aggregate documentation without committing narratives, row-level predictions, CSV files, or model artifacts.
 
-The project is organized as an AI/NLP business solution workflow:
+### Model Comparison
 
-`Complaint text -> data validation -> NLP model -> evaluation -> confidence-based routing -> human review -> reporting deliverables`
+| Model | Development CV Macro F1 |
+| --- | ---: |
+| TF-IDF + Logistic Regression | 0.7430 |
+| TF-IDF + Multinomial Naive Bayes | 0.3519 |
+| **TF-IDF + Linear SVM** | **0.7687** |
 
-The solution framework has three layers:
+Values are five-fold group-aware development cross-validation means. Macro F1 was the primary selection metric because the eight categories are imbalanced.
 
-1. **Data workflow**: Download and validate public CFPB complaint records, then prepare complaint narratives and product labels for analysis.
-2. **Model workflow**: Build and evaluate baseline NLP classifiers using TF-IDF features and Scikit-learn models.
-3. **Business workflow**: Convert model predictions into routing recommendations using confidence thresholds, human review rules, and reporting templates.
+## Leakage-Safe Evaluation
 
-Week 6 baseline selection and Week 7 aggregate evaluation were followed by a pre-Week 8 duplicate-leakage remediation. The corrected workflow excludes conflicting-label normalized-text groups, retains one representative from repeated same-label groups, selects the model with development-only group-aware cross-validation, and evaluates it once on a leakage-safe final internal test fold. The notebook saves the corrected fitted pipeline locally to `models/best_tfidf_classifier.joblib`. The artifact is intentionally excluded from Git and is not included in the repository. Routing-confidence rules and 2025 out-of-time validation remain pending, and these internal development results do not establish production readiness.
+The original row-level split allowed 3,876 of 9,840 test rows (39.39%) to share normalized text with training. Those earlier results are superseded. The corrected workflow:
+
+- excludes normalized-text groups that have conflicting product labels;
+- retains one row from repeated same-label normalized-text groups;
+- keeps normalized-text groups intact during splitting and cross-validation; and
+- confirms zero normalized-text overlap between development and final internal test data.
+
+The corrected confusion matrix and detailed reports are available here:
+
+- [Row-normalized confusion matrix](reports/figures/confusion_matrix.png)
+- [Technical results summary](reports/results_summary.md)
+- [Aggregate error analysis](reports/error_analysis.md)
+- [Completed Version 1 model card](reports/model_card.md)
+
+![Corrected Version 1 confusion matrix](reports/figures/confusion_matrix.png)
+
+### Additional Data and EDA Evidence
+
+- [Data preparation proof](reports/figures/data_preparation_proof.png)
+- [Product distribution chart](reports/figures/product_distribution.png)
+- [Text-length distribution chart](reports/figures/text_length_distribution.png)
+
+## Human-in-the-Loop Routing
+
+Linear SVM produces decision scores, not calibrated probabilities. The routing analysis uses two signals:
+
+| Locked rule | Threshold |
+| --- | ---: |
+| Minimum top decision score | 0.08 |
+| Minimum top-two score margin | 0.73 |
+
+Both thresholds must pass for an automatic-routing recommendation. Otherwise, the complaint is assigned to human review.
+
+| Final-test routing metric | Result |
+| --- | ---: |
+| Auto-routing coverage | 0.7705 (77.05%) |
+| Human-review rate | 0.2295 (22.95%) |
+| Auto-routed accuracy | 0.9503 (95.03%) |
+| Auto-routed misroute rate | 0.0497 (4.97%) |
+
+The aggregate 4.97% misroute rate does not mean every category remained below 5%. Money transfer/virtual currency/money service, Vehicle loan or lease, Debt collection, and Credit card showed higher observed category-level routing risk. Several of these categories also have small auto-routed counts, so their estimates are less stable.
+
+- [Routing decision-score summary](reports/figures/routing_decision_score_summary.png)
+
+![Decision-score routing summary](reports/figures/routing_decision_score_summary.png)
+
+The 5% development misroute rule is a project assumption, not a stakeholder-approved or production-validated risk limit. The results demonstrate selective routing behavior; they do not guarantee workload reduction in an operating environment.
 
 ## Tech Stack
 
-- Python
-- Pandas
-- Requests
+- Python, Pandas, NumPy, and Requests
 - Jupyter Notebook
-- Scikit-learn
-- TF-IDF
-- GitHub Actions
-- CFPB API
-
-The notebook-driven workflow is complete through the pre-Week 8 remediation: data preparation and EDA, a three-model Scikit-learn comparison, leakage-safe Version 1 selection, and corrected aggregate evaluation. The `src/` directory still contains placeholders or empty scaffolding for training, prediction, and routing, so it does not yet provide a complete reusable training or inference application.
+- Scikit-learn pipelines and TF-IDF
+- Logistic Regression, Multinomial Naive Bayes, and Linear SVM
+- Matplotlib and Seaborn
+- `unittest` routing-rule tests
+- Git, GitHub, and GitHub Actions
+- CFPB Consumer Complaint Database API
 
 ## Current Status
 
-- Week 1 setup: completed.
-- Week 2 CFPB raw data download and validation: completed.
-- Dataset sampling upgrade: separate 2024 and 2025 monthly-balanced + daily-stratified samples completed locally.
-- Business solution framework documentation: added as a project structure update.
-- Week 3 text cleaning and target label preparation: completed.
-- Week 4 EDA and product category exploration: completed.
-- Week 5 initial TF-IDF + Logistic Regression baseline: completed.
-- Week 6 Scikit-learn model comparison and Version 1 baseline selection: completed.
-- Week 7 selected-baseline category-level evaluation, confusion matrix, aggregate error analysis, and local fitted pipeline: completed.
-- Pre-Week 8 duplicate-text leakage remediation and corrected Version 1 evaluation: completed.
-- Week 8 decision-score/confidence-based routing and human-review rules: next step.
-- Week 9 final README and portfolio summary: planned.
-- 2025 out-of-time validation: future work in a separate dedicated task.
-- Version 2 DistilBERT experimentation: optional future work.
+Completed:
 
-## Version 1 Baseline Results
+- 2024 data ingestion, validation, cleaning, and exploratory analysis
+- duplicate-leakage remediation and group-aware evaluation
+- three-model comparison and Linear SVM selection
+- final internal 2024 evaluation and aggregate error analysis
+- decision-score threshold analysis and human-review recommendations
+- tested routing-rule logic
+- Version 1 results, model card, system documentation, and portfolio summary
 
-The corrected workflow compared TF-IDF + Logistic Regression, TF-IDF + Multinomial Naive Bayes, and TF-IDF + Linear SVM using five-fold group-aware cross-validation on development data only. Linear SVM remained the selected Version 1 baseline. It was then fitted on 26,433 development rows and evaluated once on an untouched 6,609-row final internal test fold with zero normalized-text group overlap.
+Not implemented or approved:
 
-| Metric | Value |
-| --- | ---: |
-| Accuracy | 0.8712 |
-| Macro F1 | 0.7671 |
-| Weighted F1 | 0.8715 |
+- deployed prediction API or batch-scoring service
+- operational dashboard or review queue
+- production monitoring, secure storage, and audit logging
+- scheduled retraining
+- privacy, security, compliance, governance, or stakeholder approval
 
-The original row-level split allowed 3,876 of 9,840 test rows (39.39%) to share normalized text with training, so its metrics are superseded. After excluding conflicting-label text groups and removing repeated same-label rows, 33,042 rows remained across the locked eight categories. These corrected results are internal 2024 development evidence, not proof of production readiness or 2025 performance. Detailed category-level results remain in the evaluation reports rather than this README.
-
-## Current Project Proof
-
-The project has completed setup, CFPB data preparation, EDA, baseline comparison, duplicate-leakage remediation, and corrected aggregate evaluation before Week 8.
-
-The current proof image shows an aggregate-only summary of the prepared 2024 CFPB modeling dataset, including row count, product labels, data-quality checks, and product-category distribution.
-
-![Data preparation proof](reports/figures/data_preparation_proof.png)
-
-Week 4 EDA proof artifacts:
-
-- [Product distribution chart](reports/figures/product_distribution.png)
-- [Text length distribution chart](reports/figures/text_length_distribution.png)
-
-### Corrected Version 1 Evaluation
-
-![Row-normalized confusion matrix](reports/figures/confusion_matrix.png)
-
-- [Results summary](reports/results_summary.md)
-- [Aggregate error analysis](reports/error_analysis.md)
-
-## Dataset Design Summary
-
-Dataset source: Consumer Financial Protection Bureau (CFPB) Consumer Complaint Database.
-
-The project uses complaint records with public consumer complaint narratives from the CFPB API.
-
-- Input text column: `complaint_what_happened`
-- Target label column: `product`
-
-| Dataset | Purpose | Rows | Date range | Notes |
-| --- | ---: | ---: | --- | --- |
-| 2024 CFPB sample | Model development | 50,000 | 2024-01-01 to 2024-12-31 | Model development and internal testing |
-| 2025 CFPB sample | Future holdout | 50,000 | 2025-01-01 to 2025-12-31 | Out-of-time validation |
-
-Detailed monthly and daily validation results are documented in `docs/data_ingestion.md`.
-
-## Data Decisions and Quality Notes
-
-This project documents data decisions and quality risks in addition to reporting accuracy and F1 scores. The detailed notes cover the CFPB source, 2024 model-development data, separation of the 2025 out-of-time holdout, text cleaning, missing narratives, product labels, class imbalance, possible label noise, limitations of historical complaint categories, and future data drift.
-
-[Data Decisions and Data Quality Notes](docs/data_decisions.md)
-
-## Repository Structure
-
-```text
-.
-|-- assets/                         # Placeholder for future diagrams or presentation assets
-|-- data/
-|   |-- raw/                        # Local-only raw CFPB data, ignored except .gitkeep
-|   `-- processed/                  # Local-only processed data, ignored except .gitkeep
-|-- docs/
-|   |-- business_case.md            # Business problem, users, workflow, and limitations
-|   |-- data_decisions.md           # Data decisions, quality risks, label limitations, and drift notes
-|   |-- data_ingestion.md           # CFPB data-ingestion design and validation details
-|   |-- modeling_plan.md            # Planned modeling and evaluation approach
-|   `-- system_design.md            # Architecture and data flow
-|-- models/                         # Local-only model artifacts, ignored except .gitkeep
-|-- notebooks/
-|   |-- 01_data_download.ipynb      # 2024/2025 CFPB raw data download and validation workflow
-|   |-- 02_eda_cleaning.ipynb       # Week 3 text cleaning and target-label preparation
-|   |-- 03_data_quality_product_distribution.ipynb # Week 4 data quality, product distribution, and text length EDA
-|   `-- 04_sklearn_baseline_model.ipynb # Leakage-safe modeling, comparison, selection, and evaluation
-|-- reports/
-|   |-- figures/
-|   |   |-- confusion_matrix.png      # Corrected leakage-safe row-normalized confusion matrix
-|   |   |-- data_preparation_proof.png # Aggregate-only Week 3 data-preparation proof
-|   |   |-- product_distribution.png # Week 4 product distribution chart
-|   |   `-- text_length_distribution.png # Week 4 text length distribution chart
-|   |-- error_analysis.md           # Corrected leakage-safe aggregate error analysis
-|   |-- model_card.md               # Model-documentation template; final synchronization pending
-|   `-- results_summary.md          # EDA, leakage remediation, model comparison, and corrected results
-|-- src/
-|   |-- clean_text.py               # Empty scaffold for future text-cleaning utilities
-|   |-- download_data.py            # Reusable CFPB sampling, validation, and raw CSV helper functions
-|   |-- predict.py                  # Prediction interface placeholder pending dedicated work
-|   |-- routing_rules.py            # Routing policy placeholder pending Week 8 validation
-|   `-- train_baseline.py           # Empty scaffold for future reusable training utilities
-|-- requirements.txt
-`-- README.md
-```
-
-## Data Safety Notes
-
-- Raw CFPB CSV files are local-only and ignored by Git.
-- Processed data and model artifacts are local-only.
-- Do not upload raw complaint files or complaint narrative examples to GitHub.
-- 2025 remains separate for future out-of-time validation.
-
-Longer ingestion and raw-data handling notes are documented in `docs/data_ingestion.md`.
-
-## Roadmap / Next Steps
-
-- Complete Week 8 decision-score/confidence-based routing and human-review rules.
-- Measure auto-routing coverage and the human-review rate after routing thresholds are defined and validated.
-- Complete the Week 9 final README and portfolio summary.
-- Run dedicated future 2025 out-of-time validation without using the holdout for training or model selection.
-- Synchronize the final model card after the remaining evaluation and routing work.
-- Optionally experiment with DistilBERT as a Version 2 model.
-
+The fitted pipeline exists only as a local, Git-ignored artifact at `models/best_tfidf_classifier.joblib`. It is not committed to the repository. The repository does not provide a deployed inference service.
 
 ## Limitations
 
-- The 2024 and 2025 datasets are sampled from the CFPB database, not the full CFPB database.
-- Within each daily window, CFPB API pagination may still reflect the API sort order rather than fully random selection.
-- The 2025 dataset is reserved for future out-of-time validation and should not be used for model training or model selection.
-- The corrected internal evaluation removes normalized duplicate-text overlap, but it still uses a sampled 2024 development dataset.
-- Linear SVM decision scores are not calibrated probabilities, and routing thresholds have not yet been validated.
-- Smaller product categories have lower support and therefore less stable performance estimates.
-- Complaint narratives can be sensitive, even when sourced from public data, so any production workflow would require stronger privacy, access control, monitoring, and governance.
-- Automated routing should support human review, not replace it, especially for low-confidence, ambiguous, regulated, or high-risk complaints.
+- The evaluation uses a sampled 2024 CFPB dataset, not institution-specific intake data.
+- Within each daily sampling window, CFPB API pagination may still reflect API sort order rather than fully random selection.
+- Public narratives and historical CFPB labels may contain ambiguity, label noise, and selection bias.
+- The dominant credit-reporting category strongly influences weighted metrics.
+- Smaller categories have lower support and less stable estimates.
+- Exact normalized-text hashing does not detect paraphrased near-duplicates.
+- Linear SVM decision scores and margins are not calibrated probabilities.
+- Routing thresholds are project assumptions and have not received production or stakeholder approval.
+- No fairness evaluation, probability calibration, operational workload study, or production monitoring result is claimed.
+- The protected 2025 data was not loaded or used for Version 1 model selection, evaluation, or routing analysis.
+
+## Roadmap
+
+1. Run a separately governed 2025 out-of-time validation after the evaluation plan is locked.
+2. Review category-specific error costs and routing thresholds with operational stakeholders.
+3. Evaluate probability calibration and refine category-specific human-review policies.
+4. Add privacy, security, fairness, explainability, monitoring, and drift controls before any production consideration.
+5. Compare DistilBERT with the locked Version 1 baseline as future work, using the same leakage-safe data policy.
+6. Design production APIs, dashboards, storage, retraining, and governance only after validation and approval.
+
+## Repository Guide
+
+| Path | Purpose |
+| --- | --- |
+| `notebooks/01_data_download.ipynb` | Local-first CFPB data acquisition and validation |
+| `notebooks/02_eda_cleaning.ipynb` | Text cleaning and target preparation |
+| `notebooks/03_data_quality_product_distribution.ipynb` | Data-quality and distribution analysis |
+| `notebooks/04_sklearn_baseline_model.ipynb` | Leakage-safe comparison, selection, and final Version 1 evaluation |
+| `notebooks/05_decision_score_routing.ipynb` | Development OOF threshold selection and final-test routing analysis |
+| `notebooks/06_final_project_submission.ipynb` | Standalone course submission notebook |
+| `reports/results_summary.md` | Verified Version 1 and routing results |
+| `reports/model_card.md` | Intended use, limitations, oversight, and monitoring guidance |
+| `docs/system_design.md` | Completed prototype components and future architecture |
+| `docs/portfolio_summary.md` | Portfolio description and resume-ready bullets |
+| `src/routing_rules.py` | Tested routing decision logic |
+| `tests/test_routing_rules.py` | Routing boundary, validation, and class-order tests |
+
+Raw and processed CSV files, complaint narratives, row-level predictions, and fitted model artifacts remain local and Git-ignored.
+
+## Documentation
+
+- [Business case](docs/business_case.md)
+- [Data decisions and quality notes](docs/data_decisions.md)
+- [Data-ingestion design](docs/data_ingestion.md)
+- [Modeling plan and completed Version 1 workflow](docs/modeling_plan.md)
+- [System design](docs/system_design.md)
+- [Portfolio summary](docs/portfolio_summary.md)

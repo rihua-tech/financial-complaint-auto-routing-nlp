@@ -1,91 +1,162 @@
 # System Design
 
-## High-Level Architecture
+## Scope
 
-The planned solution has five logical layers:
+This repository implements a notebook-centered internal prototype for CFPB complaint classification, leakage-safe evaluation, and human-review routing analysis. It does not implement a production prediction service.
 
-1. **Data ingestion**: Download public CFPB complaint data locally.
-2. **Data preparation**: Validate required fields, clean narrative text, and prepare labels.
-3. **Modeling**: Train baseline NLP classifiers and save evaluation outputs.
-4. **Routing decision**: Convert predictions into auto-route or human-review recommendations.
-5. **Reporting**: Summarize model performance, error patterns, and business routing metrics.
-
-The current repository contains completed setup/data-ingestion work, documentation, report templates, and lightweight routing placeholders. Model training and evaluation are planned.
-
-## Data Flow
+## Architecture
 
 ```mermaid
 flowchart LR
-    A[CFPB Consumer Complaint API] --> B[Local raw CSV]
-    B --> C[Validation checks]
-    C --> D[EDA and cleaning - planned]
-    D --> E[Processed modeling dataset - planned]
-    E --> F[TF-IDF feature pipeline - planned]
-    F --> G[Baseline classifier - planned]
-    G --> H[Prediction output]
-    H --> I[Routing policy]
-    I --> J{Meets auto-route rules?}
-    J -->|Yes| K[Auto-routing recommendation]
-    J -->|No| L[Human review queue]
-    K --> M[Business reporting]
-    L --> M
+    subgraph Completed["Completed internal prototype"]
+        A[Public CFPB API] --> B[Local Git-ignored CSV]
+        B --> C[Validation and light text cleaning]
+        C --> D[Duplicate and label-conflict remediation]
+        D --> E[Group-aware development and final-test split]
+        E --> F[TF-IDF plus Linear SVM]
+        F --> G[Internal metrics and confusion matrix]
+        F --> H[Decision scores and top-two margins]
+        H --> I{Both routing thresholds pass?}
+        I -->|Yes| J[Automatic-route recommendation]
+        I -->|No| K[Human-review recommendation]
+        G --> L[Aggregate reports]
+        J --> L
+        K --> L
+    end
+
+    subgraph Future["Future production components"]
+        M[Prediction API or batch service]
+        N[Human-review dashboard]
+        O[Secure operational storage]
+        P[Monitoring and drift detection]
+        Q[Scheduled retraining]
+        R[Deployment and governance approval]
+    end
 ```
 
-## Component Responsibilities
+The completed and future subgraphs are intentionally separate. The repository produces model and routing evidence; it does not connect the prototype to live complaint intake or downstream business systems.
 
-### Data Ingestion
+## Component Status
 
-The data-ingestion workflow downloads public CFPB complaint records to `data/raw/`. Raw CSV files are local only and ignored by Git. The current Week 2 workflow has already completed the raw download and validation snapshot.
+| Component | Status | Evidence or boundary |
+| --- | --- | --- |
+| Data ingestion | Completed for local research use | `notebooks/01_data_download.ipynb`, `docs/data_ingestion.md` |
+| Data validation and text preparation | Completed | Notebooks 02-04 and aggregate documentation |
+| Duplicate-leakage remediation | Completed | Conflicting groups removed; group overlap asserted as zero |
+| Model comparison | Completed | Logistic Regression, Multinomial Naive Bayes, and Linear SVM |
+| Selected classifier | Completed | TF-IDF + Linear SVM |
+| Internal evaluation | Completed | 2024 final internal test metrics and confusion matrix |
+| Routing analysis | Completed | Locked score and margin thresholds |
+| Routing-rule implementation | Completed for prototype use | `src/routing_rules.py` |
+| Routing-rule tests | Completed | `tests/test_routing_rules.py` |
+| Aggregate reporting | Completed | Results summary, error analysis, model card, and figures |
+| Fitted model artifact | Local only | Git-ignored; not distributed in the repository |
+| Prediction interface | Not implemented | `src/predict.py` remains a placeholder |
+| Production deployment | Not implemented or approved | Future work |
 
-### Data Preparation
+## Completed Data Flow
 
-Week 3 EDA and cleaning are planned but not continued in this branch. Planned preparation includes:
+### 1. Ingestion and Validation
 
-- Validate narrative and target-label fields.
-- Remove or handle unusable records based on documented rules.
-- Clean text for baseline modeling.
-- Create a processed modeling dataset locally, without committing CSV files.
+The data-ingestion notebook retrieves public CFPB complaints and validates required fields, date coverage, complaint identifiers, narrative availability, and product labels. Raw CSV files are stored locally under `data/raw/` and ignored by Git.
 
-### Modeling
+Version 1 uses only the validated 2024 sample. The separate 2025 file was not loaded or used for model selection, internal evaluation, or routing-threshold selection.
 
-The planned baseline modeling workflow uses:
+### 2. Text Preparation
 
-- TF-IDF vectorization.
-- Logistic Regression.
-- Naive Bayes.
-- Linear SVM.
+The prototype:
 
-Model artifacts are expected to remain local and ignored by Git unless a future governance decision changes that policy.
+- removes URL-like text;
+- collapses repeated whitespace;
+- trims surrounding whitespace;
+- checks missing narratives and labels;
+- reports text-length outliers in aggregate; and
+- preserves most language for TF-IDF.
 
-### Prediction Interface
+Processed CSV files remain local and Git-ignored.
 
-`src/predict.py` provides a placeholder interface for future prediction code. It intentionally does not assume that a trained model exists.
+### 3. Leakage-Safe Modeling
 
-### Routing Policy
+Normalized cleaned text is represented by a stable SHA-256 grouping key. Conflicting-label groups are excluded, repeated same-label groups are reduced to one representative, and group-aware partitioning prevents normalized text from crossing development and final-test boundaries.
 
-`src/routing_rules.py` provides lightweight placeholder rules for turning model outputs into routing decisions. The policy is expected to use confidence thresholds, prediction margin, and missing-output checks.
+The selected Scikit-learn pipeline combines TF-IDF and Linear SVM. The pipeline is fitted locally and saved to an ignored model path; it is not a committed deployable artifact.
 
-### Reporting
+### 4. Internal Evaluation
 
-The reports in `reports/` are templates only:
+The workflow reports:
 
-- `results_summary.md`
-- `error_analysis.md`
-- `model_card.md`
+- Accuracy, Macro F1, and Weighted F1;
+- per-category precision, recall, F1, and support;
+- a row-normalized confusion matrix;
+- duplicate-leakage audit results; and
+- aggregate error interpretation.
 
-They should be completed only after model training and evaluation are performed.
+All reported evaluation data is aggregate. Complaint narratives and row-level predictions are not committed.
 
-## Future Production Deployment Ideas
+### 5. Routing Rules
 
-The following ideas are future work and are not implemented in this repository:
+The routing policy uses:
 
-- Batch scoring workflow for daily complaint intake.
-- API service for real-time routing recommendations.
-- Human review dashboard for low-confidence predictions.
-- Monitoring dashboard for model quality, drift, review volume, and override rates.
-- Secure storage layer for complaint text and model outputs.
-- Audit logging for predictions, confidence scores, routing decisions, and human overrides.
-- CI/CD workflow for model validation before deployment.
-- Scheduled retraining or periodic model review process.
+- minimum top decision score: 0.08; and
+- minimum top-two score margin: 0.73.
 
-Any production deployment would require privacy, security, compliance, and model governance review before use.
+Both conditions must pass for an automatic-routing recommendation. Otherwise, the result is a human-review recommendation. Decision scores are not calibrated probabilities.
+
+`src/routing_rules.py` validates score arrays and class-label alignment, applies inclusive threshold boundaries, and routes tied, malformed, non-finite, or below-threshold scores to review.
+
+### 6. Human Review
+
+The repository identifies cases for review but does not implement a review queue or dashboard. A future operational workflow would need:
+
+- reviewer identity and access controls;
+- reason codes, overrides, and escalation rules;
+- category-specific risk policies;
+- audit logging;
+- service-level expectations; and
+- feedback and quality-review processes.
+
+### 7. Reporting
+
+Completed reporting includes:
+
+- `reports/results_summary.md`;
+- `reports/error_analysis.md`;
+- `reports/model_card.md`;
+- `reports/figures/confusion_matrix.png`; and
+- `reports/figures/routing_decision_score_summary.png`.
+
+## Future Production Architecture
+
+The following components are not implemented:
+
+### Prediction API or Batch Service
+
+A supported service would need versioned preprocessing, model loading, input validation, authentication, rate limits, error handling, and reproducible deployment.
+
+### Dashboard and Human-Review Queue
+
+A future interface would present the recommended category, review reason, relevant model signals, and approved context without exposing unnecessary sensitive text.
+
+### Secure Production Storage
+
+Production complaint text and outputs would require encryption, access controls, retention rules, deletion procedures, environment separation, and privacy review.
+
+### Monitoring
+
+A monitoring system would track data quality, category distributions, routing coverage, review rates, overrides, per-category performance, score and margin distributions, drift, latency, and service health. No live monitoring result exists.
+
+### Scheduled Retraining
+
+Retraining would require a versioned label taxonomy, reviewed training data, reproducible pipelines, regression tests, independent evaluation, rollback plans, and a new protected holdout.
+
+### Deployment and Governance Approval
+
+Any deployment would require privacy, security, compliance, model-risk, operational, and stakeholder approval. The current thresholds are project assumptions and are not approved production limits.
+
+## Security and Privacy Boundaries
+
+- Raw and processed CSV files are local and ignored by Git.
+- Fitted model artifacts are local and ignored by Git.
+- Complaint narratives and row-level predictions are excluded from reports.
+- The repository contains aggregate metrics and public-data workflow code only.
+- Public availability of a narrative does not remove the need for stronger controls in a production environment.
