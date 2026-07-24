@@ -8,13 +8,14 @@
 
 Financial institutions, fintech firms, and complaint operations teams receive written complaints that must be routed to the appropriate product team. Manual triage can be slow and inconsistent, while an incorrect automated route can delay review or create operational risk.
 
-This repository implements an internal Version 1 NLP prototype that predicts one of eight CFPB product categories from a public consumer complaint narrative. The model supplies a routing recommendation; a decision-score policy sends lower-signal or ambiguous cases to human review. It does not make legal or factual determinations and is not a deployed production service.
+This repository implements an internal Version 1 NLP prototype that predicts one of eight CFPB product categories from a public consumer complaint narrative.The model predicts a product category, and a decision-score policy converts that prediction into either an automatic-routing recommendation or human review. It does not make legal or factual determinations and is not a deployed production service.
 
 ## Version 1 at a Glance
 
 | Item | Verified result |
 | --- | --- |
 | Data source | Public CFPB consumer complaint narratives |
+| Input / target | `complaint_what_happened` narrative / `product` category |
 | Development period | 2024 only |
 | Protected future holdout | Separate 2025 CFPB sample, 50,000 rows; reserved for future out-of-time validation and not loaded or used for Version 1 |
 | Validated input sample | 50,000 rows |
@@ -36,6 +37,16 @@ The prototype is relevant to complaint intake, product operations, compliance op
 `Complaint narrative -> validation -> text preparation -> model recommendation -> routing rules -> automatic-route recommendation or human review -> aggregate reporting`
 
 Human review remains central. The implemented routing rules assign complaints to review when either score threshold fails or model signals are tied, invalid, non-finite, or otherwise unusable. Higher-risk categories are not automatically assigned to review by the current code; a future business policy may add category-specific review controls.
+
+### Potential Business Value
+
+The prototype demonstrates how NLP-assisted routing could:
+
+- support more consistent initial product-category recommendations;
+- prioritize ambiguous or lower-signal complaints for human review; and
+- provide aggregate visibility into routing coverage, review volume, and category-level risk.
+
+These are demonstrated analytical capabilities, not claims of realized workload reduction, cost savings, or production impact.
 
 ## Completed Technical Approach
 
@@ -154,6 +165,7 @@ The fitted pipeline exists only as a local, Git-ignored artifact at `models/best
 - Linear SVM decision scores and margins are not calibrated probabilities.
 - Routing thresholds are project assumptions and have not received production or stakeholder approval.
 - No fairness evaluation, probability calibration, operational workload study, or production monitoring result is claimed.
+- Complaint narratives may contain sensitive information; any operational use would require stronger privacy controls, access restrictions, retention rules, and governance.
 - The protected 2025 data was not loaded or used for Version 1 model selection, evaluation, or routing analysis.
 
 ## Roadmap
