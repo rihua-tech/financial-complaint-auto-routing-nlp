@@ -12,7 +12,7 @@ This document preserves the original modeling rationale and records what was com
 - Target label: `product`.
 - Development period: 2024 CFPB complaints only.
 - Original validated sample: 50,000 rows.
-- Future out-of-time holdout: a separate 2025 file that was not loaded or used.
+- Out-of-time validation period: a separate 50,000-row 2025 sample evaluated once after the Version 1 workflow was frozen.
 - Data policy: raw and processed CSV files remain local and Git-ignored.
 
 The original sampling strategy was monthly-balanced and daily-stratified to reduce newest-first recency bias. Version 1 uses the 2024 sample for data preparation, model selection, internal evaluation, and routing-rule analysis.
@@ -109,11 +109,42 @@ The prototype recommends human review for low top scores, low margins, tied scor
 
 Routing behavior is tested in `tests/test_routing_rules.py`, including exact threshold boundaries, invalid inputs, ties, and class-order safety.
 
+### 8. Completed 2025 Out-of-Time Validation
+
+The 2025 evaluation followed a two-phase pre-holdout protocol:
+
+1. **Phase 1:** record the baseline commit, environment, file fingerprints, fitted pipeline configuration, class order, cleaning rules, routing thresholds, cohort definitions, exclusions, metrics, and comparison rules before opening the 2025 CSV.
+2. **Phase 2:** reproduce the locked 2024 reference gate, verify the 2025 file fingerprint and ingestion structure, construct the committed cohorts, and evaluate classification, routing, and descriptive drift without changing the workflow.
+
+The 2024 reproduction gate confirmed 33,042 corrected modeling rows, 26,433 development rows, 6,609 final internal-test rows, all eight classes in both partitions, zero normalized-text overlap, and the complete locked classification and routing results. The 2025 integrity gate then reproduced 50,000 raw rows, 17 columns, the expected 2025 date range, zero duplicate complaint IDs, and zero missing or blank required fields.
+
+The fitted TF-IDF + Linear SVM model, text preparation, 50,000 fitted features, eight-category scope, `classes_` order, cohort rules, comparison metrics, and routing thresholds remained frozen. No fitting, tuning, calibration, model selection, or threshold selection used 2025 results.
+
+The committed cohorts were:
+
+- **Primary leakage-resistant cohort:** 30,156 rows after excluding normalized-text overlap with either 2024 partition, conflicting-label groups, and extra repeated same-label rows. This is the headline temporal result.
+- **Secondary operational cohort:** 49,225 otherwise eligible locked-scope rows, retaining repeated texts and cross-year overlap as a sensitivity view.
+
+| Cohort | Accuracy | Macro F1 | Weighted F1 | Routing coverage | Review rate | Routed accuracy | Misroute rate |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Locked 2024 final internal test | 0.8712 | 0.7671 | 0.8715 | 0.7705 | 0.2295 | 0.9503 | 0.0497 |
+| **2025 primary leakage-resistant** | **0.8315** | **0.7527** | **0.8306** | **0.7251** | **0.2749** | **0.9203** | **0.0797** |
+| 2025 secondary sensitivity | 0.8771 | 0.7569 | 0.8766 | 0.7809 | 0.2191 | 0.9424 | 0.0576 |
+
+Headline temporal generalization weakened: primary accuracy, Macro F1, Weighted F1, routing coverage, and routed accuracy declined, while review and misroute rates increased. Classification, routing, label-distribution, text, locked-vocabulary, decision-score, and margin drift were documented as descriptive diagnostics rather than evidence of causality. The secondary cohort does not replace the primary conclusion because it retains repeated texts and prior-year overlap.
+
+The 2025 sample is no longer an untouched, unbiased holdout. It cannot be reused for unbiased tuning, calibration, selection, or threshold changes; any future model or policy change requires a new untouched validation period.
+
 ## Completed Artifacts
 
 - `notebooks/04_sklearn_baseline_model.ipynb`: corrected Version 1 comparison and evaluation.
 - `notebooks/05_decision_score_routing.ipynb`: routing threshold selection and final-test analysis.
-- `reports/results_summary.md`: verified technical results.
+- `notebooks/07_2025_out_of_time_validation.ipynb`: 2024 reproduction gate and locked 2025 evaluation.
+- `reports/2025_validation_protocol.md`: committed pre-holdout plan and safeguards.
+- `reports/2025_holdout_results.md`: verified 2025 classification, routing, drift, and cohort comparisons.
+- `reports/figures/2025_confusion_matrix.png`: primary-cohort row-normalized confusion matrix.
+- `reports/figures/2024_vs_2025_comparison.png`: aggregate 2024 and 2025 comparison.
+- `reports/results_summary.md`: verified 2024 reference and 2025 out-of-time results.
 - `reports/error_analysis.md`: aggregate category-level interpretation.
 - `reports/model_card.md`: intended use, limitations, oversight, and monitoring recommendations.
 - `src/routing_rules.py`: reusable routing-rule logic.
@@ -123,10 +154,6 @@ The fitted pipeline is local and Git-ignored. A reusable production training or 
 
 ## Future Work
 
-### 2025 Out-of-Time Validation
-
-The protected 2025 data remains future work. Before accessing outcomes, freeze the preprocessing, category scope, duplicate policy, fitted model, metrics, and routing rules. The holdout must not be used for additional selection or repeated tuning.
-
 ### DistilBERT
 
 DistilBERT is a future Version 2 comparison, not part of Version 1. Any experiment should:
@@ -134,7 +161,7 @@ DistilBERT is a future Version 2 comparison, not part of Version 1. Any experime
 - use the same leakage-safe data boundaries;
 - compare against the locked TF-IDF + Linear SVM baseline;
 - report compute, latency, monitoring, and interpretability tradeoffs; and
-- avoid accessing the 2025 holdout for model selection.
+- use new development data and a new untouched validation period rather than reusing the exhausted 2025 holdout.
 
 ### Production Readiness
 

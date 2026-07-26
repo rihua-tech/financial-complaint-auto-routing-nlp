@@ -22,6 +22,8 @@ Complaint operations teams must route unstructured narratives to the correct pro
 8. Evaluated the model with overall, weighted, macro, and per-category metrics plus a confusion matrix.
 9. Selected two routing thresholds from development out-of-fold decision scores and evaluated the locked policy once on the final test set.
 10. Added tested routing-rule logic for threshold boundaries, invalid inputs, ties, and class-order safety.
+11. Precommitted a two-phase 2025 holdout protocol and reproduced the complete 2024 reference before opening the out-of-time sample.
+12. Evaluated the unchanged model and routing policy on leakage-resistant and operational 2025 cohorts, including classification, routing, category-risk, and descriptive drift analysis.
 
 ## Tech Stack
 
@@ -37,7 +39,7 @@ Complaint operations teams must route unstructured narratives to the correct pro
 
 ## Verified Results
 
-### Model Evaluation
+### Locked 2024 Reference
 
 | Internal 2024 metric | Result |
 | --- | ---: |
@@ -60,6 +62,24 @@ Both thresholds must pass for an automatic-routing recommendation. Linear SVM de
 
 The 4.97% misroute rate is aggregate and does not mean every category remained below 5%. Money transfer/virtual currency/money service, Vehicle loan or lease, Debt collection, and Credit card showed higher observed category-level risk. Smaller category samples also produce less stable estimates.
 
+### One-Time 2025 Out-of-Time Validation
+
+The fitted model, text preparation, eight-category scope, class order, evaluation cohorts, and routing thresholds remained locked. No 2025 result was used to fit, tune, calibrate, or select the model or policy.
+
+The 30,156-row primary leakage-resistant cohort is the headline result. It excludes normalized-text overlap with the locked 2024 partitions, conflicting-label groups, and extra repeated same-label rows. The 49,225-row secondary operational cohort retains repeated texts and cross-year overlap and is reported only as a sensitivity view.
+
+| 2025 headline metric | Primary result |
+| --- | ---: |
+| Accuracy | 0.8315 |
+| Macro F1 | 0.7527 |
+| Weighted F1 | 0.8306 |
+| Auto-routing coverage | 72.51% |
+| Human-review rate | 27.49% |
+| Auto-routed accuracy | 92.03% |
+| Auto-routed misroute rate | 7.97% |
+
+The honest headline is weaker temporal generalization: compared with the locked 2024 reference, primary accuracy fell by 0.0397, Weighted F1 by 0.0408, routing coverage by 0.0453, and routed accuracy by 0.0300, while review and misroute rates each increased by 0.0453 and 0.0300, respectively. Category-level analysis found both improvements and declines, and drift diagnostics documented changes in label mix, text, locked-vocabulary use, decision scores, and margins without assigning a cause.
+
 ## Human-in-the-Loop Design
 
 The model does not replace reviewers. The implemented routing rules recommend human review when either threshold fails or score inputs are tied, invalid, non-finite, or otherwise unusable. Category-based review is not implemented; a future business policy may add category-specific controls for higher-risk categories, escalations, ambiguous narratives, or compliance-sensitive cases.
@@ -75,24 +95,27 @@ This design treats selective automation as a risk-management problem: coverage m
 - **Kept preprocessing in the pipeline:** Learned TF-IDF vocabulary and weights only from training folds.
 - **Mapped scores safely:** Used the fitted classifier's `classes_` order instead of assuming a frequency-based category order.
 - **Tested routing boundaries:** Covered inclusive thresholds, ties, malformed inputs, non-finite values, and label-score alignment.
+- **Precommitted temporal validation:** Locked data rules, cohorts, metrics, fingerprints, and thresholds before inspecting the 2025 sample.
+- **Reported degradation directly:** Kept the leakage-resistant cohort as the headline result even though the operational sensitivity cohort was more favorable.
 - **Protected sensitive artifacts:** Kept CSV files, complaint narratives, row-level predictions, and fitted model artifacts out of Git.
 
 ## Limitations
 
-- Results use a sampled 2024 public CFPB dataset and may not transfer to private complaint channels.
+- Results use sampled 2024 and 2025 public CFPB data and may not transfer to private complaint channels or the complete operational population.
 - Historical product labels may be ambiguous and are not perfect operational ground truth.
 - Class imbalance and small categories produce uneven estimate stability.
 - Decision scores are not probabilities, and calibration was not evaluated.
 - Thresholds are project assumptions, not stakeholder-approved production limits.
-- The 2025 holdout was not used; out-of-time performance remains unknown.
+- The secondary 2025 cohort retains repeated texts and cross-year overlap and is a sensitivity view, not the headline result.
+- The evaluated 2025 sample is no longer an untouched holdout; future model or policy changes require a new untouched validation period.
 - No fairness analysis, production workload study, monitoring result, deployment, or governance approval is claimed.
 
 ## Portfolio-Ready Description
 
-Built a leakage-safe NLP complaint-routing prototype using Scikit-learn TF-IDF pipelines and Linear SVM, correcting duplicate-text contamination in the original evaluation and adding a tested human-review policy based on uncalibrated decision-score and margin signals. On a protected 2024 internal test fold, the model achieved 0.8712 accuracy and 0.7671 Macro F1; the selective routing policy covered 77.05% of cases with 95.03% accuracy among auto-routed recommendations while exposing materially higher risk in several smaller categories.
+Built a leakage-safe NLP complaint-routing prototype using Scikit-learn TF-IDF pipelines and Linear SVM, corrected duplicate-text contamination, and added a tested human-review policy based on uncalibrated score and margin signals. A precommitted one-time 2025 validation kept the full workflow locked and found weaker headline performance on a 30,156-row leakage-resistant cohort: 0.8315 accuracy, 0.7527 Macro F1, 72.51% routing coverage, and 92.03% routed accuracy. Aggregate drift and category-risk analysis documented the limitations without claiming production readiness.
 
 ## Resume-Ready Bullets
 
-- Built and evaluated an eight-class CFPB complaint-routing system with Python, Scikit-learn, TF-IDF, and Linear SVM, achieving **0.8712 accuracy** and **0.7671 Macro F1** on a leakage-safe 6,609-row internal test fold.
+- Built and evaluated an eight-class CFPB complaint-routing system with Python, Scikit-learn, TF-IDF, and Linear SVM, achieving **0.8712 accuracy** and **0.7671 Macro F1** on a leakage-safe 6,609-row 2024 internal test fold.
 - Detected duplicate-text leakage affecting **39.39% of the superseded test split** and redesigned preprocessing and validation with SHA-256 text grouping and `StratifiedGroupKFold`, reducing development/test normalized-text overlap to **zero**.
-- Implemented and tested a human-review routing policy using top decision score and score-margin thresholds, producing **77.05% coverage** and **95.03% auto-routed accuracy** while documenting category-level risk and non-probabilistic score limitations.
+- Precommitted and executed a one-time 2025 out-of-time validation with a locked model and routing policy; the **30,156-row leakage-resistant headline cohort** achieved **0.8315 accuracy**, **0.7527 Macro F1**, **72.51% coverage**, and **92.03% routed accuracy**, transparently documenting temporal degradation, drift, and category-level risk.
