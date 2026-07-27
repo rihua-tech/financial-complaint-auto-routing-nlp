@@ -10,7 +10,7 @@ Financial institutions, fintech firms, and complaint operations teams receive wr
 
 This repository implements an internal Version 1 NLP prototype that predicts one of eight CFPB product categories from a public consumer complaint narrative. The model predicts a product category, and a decision-score policy converts that prediction into either an automatic-routing recommendation or human review. It does not make legal or factual determinations and is not a deployed production service.
 
-## Version 1 at a Glance
+## Locked Version 1 and 2024 Reference at a Glance
 
 | Item | Verified result |
 | --- | --- |
@@ -50,18 +50,13 @@ These are demonstrated analytical capabilities, not claims of realized workload 
 
 ## Completed Technical Approach
 
-1. Downloaded and validated a monthly-balanced, daily-stratified 2024 CFPB sample.
-2. Applied light text cleaning while preserving most complaint language.
-3. Audited missing values, text-length outliers, duplicates, class balance, and label conflicts.
-4. Removed normalized-text groups with conflicting labels and kept one representative from repeated same-label groups.
-5. Used group-aware splitting so normalized duplicate text could not cross development and final-test partitions.
-6. Compared Scikit-learn pipelines using TF-IDF with Logistic Regression, Multinomial Naive Bayes, and Linear SVM.
-7. Selected Linear SVM using five-fold group-aware cross-validation on development data only.
-8. Evaluated the selected pipeline once on the 6,609-row final internal test fold.
-9. Selected routing thresholds from development out-of-fold decision scores, then applied the locked policy once to the final test set.
-10. Added tested routing-rule utilities and aggregate documentation without committing narratives, row-level predictions, CSV files, or model artifacts.
-11. Committed a two-phase 2025 validation protocol before opening the out-of-time sample and reproduced the complete 2024 reference gate.
-12. Evaluated the unchanged model and routing policy on a primary leakage-resistant 2025 cohort, with a secondary operational cohort retained only as a sensitivity view.
+1. Acquired and validated a monthly-balanced, daily-stratified 2024 CFPB sample, then applied light text cleaning.
+2. Completed aggregate EDA, label review, and missing-value, outlier, duplicate, and conflict audits.
+3. Removed conflicting-label text groups, retained one representative from each repeated same-label group, and used group-aware splitting to prevent normalized-text leakage.
+4. Compared TF-IDF pipelines with Logistic Regression, Multinomial Naive Bayes, and Linear SVM, selecting Linear SVM through development-only cross-validation.
+5. Evaluated the locked model once on the 6,609-row 2024 final internal test, with zero normalized-text overlap between the development and final-test partitions.
+6. Selected score and margin thresholds from development out-of-fold results, then tested the human-review routing policy on the final internal test.
+7. Precommitted the 2025 validation protocol, reproduced the 2024 reference gate, and evaluated the unchanged workflow for out-of-time classification, routing, and drift.
 
 ### Model Comparison
 
@@ -88,6 +83,8 @@ The corrected confusion matrix and detailed reports are available here:
 - [Technical results summary](reports/results_summary.md)
 - [Aggregate error analysis](reports/error_analysis.md)
 - [Completed Version 1 model card](reports/model_card.md)
+
+The figure below shows where the locked 2024 classifier distinguishes categories well and where category confusion remains.
 
 ![Corrected Version 1 confusion matrix](reports/figures/confusion_matrix.png)
 
@@ -119,11 +116,15 @@ The aggregate 4.97% misroute rate does not mean every category remained below 5%
 
 - [Routing decision-score summary](reports/figures/routing_decision_score_summary.png)
 
+The figure below shows how the locked routing policy balances automatic-routing coverage, human review, and category-level misroute risk on the 2024 final internal test.
+
 ![Decision-score routing summary](reports/figures/routing_decision_score_summary.png)
 
 The 5% development misroute rule is a project assumption, not a stakeholder-approved or production-validated risk limit. The results demonstrate selective routing behavior; they do not guarantee workload reduction in an operating environment.
 
 ## 2025 Out-of-Time Validation
+
+**Headline finding:** The locked workflow remained useful, but classification and routing performance weakened on the stricter 2025 leakage-resistant cohort.
 
 The one-time 2025 evaluation kept the fitted model, preprocessing, eight-category scope, `classes_` order, cohort rules, metrics, and routing thresholds fixed. The locked 6,609-row 2024 final internal test remains the reference. The 30,156-row primary leakage-resistant cohort is the headline 2025 result; it excludes normalized-text overlap with either 2024 partition, removes conflicting-label groups, and retains one row per remaining repeated same-label text. The 49,225-row secondary operational cohort retains repeated texts and cross-year overlap and is reported only as a sensitivity view.
 
@@ -138,6 +139,8 @@ Against the locked 2024 reference, the headline primary result decreased by 0.03
 - [Complete 2025 holdout results](reports/2025_holdout_results.md)
 - [2025 primary confusion matrix](reports/figures/2025_confusion_matrix.png)
 - [2024-versus-2025 comparison](reports/figures/2024_vs_2025_comparison.png)
+
+The figure below compares whether the locked 2024 classification and routing results carried forward to the two 2025 evaluation cohorts.
 
 ![Locked 2024 versus 2025 classification and routing comparison](reports/figures/2024_vs_2025_comparison.png)
 
@@ -154,19 +157,24 @@ The 2025 sample is no longer an untouched, unbiased holdout. It was not used to 
 - Git, GitHub, and GitHub Actions
 - CFPB Consumer Complaint Database API
 
+## Reproduce the Workflow
+
+1. Use Python 3.11 and install the listed dependencies with `python -m pip install -r requirements.txt`.
+2. Run Notebooks 01 through 05 in numerical order, then run Notebook 07 for the locked out-of-time validation. Notebook 06 is a standalone course-submission notebook.
+3. Keep raw and processed CSV files and fitted model artifacts local and Git-ignored.
+4. Use the exact locked environment documented in `reports/2025_validation_protocol.md` for Notebook 07.
+
+The unpinned `requirements.txt` supports setup but does not guarantee exact compatibility with the saved model artifact.
+
 ## Current Status
 
 Completed:
 
-- 2024 data ingestion, validation, cleaning, and exploratory analysis
-- duplicate-leakage remediation and group-aware evaluation
-- three-model comparison and Linear SVM selection
-- final internal 2024 evaluation and aggregate error analysis
-- decision-score threshold analysis and human-review recommendations
-- tested routing-rule logic
-- Version 1 results, model card, system documentation, and portfolio summary
-- committed pre-holdout protocol and reproducible 2024 entry gate
-- locked 2025 out-of-time classification, routing, drift, and cohort-sensitivity evaluation
+- 2024 ingestion, cleaning, EDA, leakage remediation, and group-aware model selection
+- locked 2024 internal classification and decision-score routing evaluation
+- tested routing-rule logic and aggregate model documentation
+- precommitted holdout protocol and reproducible 2024 entry gate
+- locked 2025 classification, routing, drift, and cohort-sensitivity evaluation
 
 Not implemented or approved:
 
@@ -176,7 +184,7 @@ Not implemented or approved:
 - scheduled retraining
 - privacy, security, compliance, governance, or stakeholder approval
 
-The fitted pipeline exists only as a local, Git-ignored artifact at `models/best_tfidf_classifier.joblib`. It is not committed to the repository. The repository does not provide a deployed inference service.
+The fitted pipeline remains a local, Git-ignored artifact at `models/best_tfidf_classifier.joblib`; no operational inference service is included.
 
 ## Limitations
 

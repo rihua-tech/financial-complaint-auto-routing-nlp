@@ -2,7 +2,7 @@
 
 ## Project Context
 
-This project predicts a financial product category from the text of a consumer complaint. It is intended to support complaint routing, with human review for ambiguous, low-confidence, or high-risk cases.
+This project predicts a financial product category from the text of a consumer complaint. It is intended to support complaint routing, with human review for ambiguous, lower-signal, or policy-sensitive cases.
 
 Model metrics do not describe every source of risk. Data selection, cleaning, labels, class balance, and changes over time must also be documented.
 
@@ -12,7 +12,7 @@ Model metrics do not describe every source of risk. Data selection, cleaning, la
 | --- | --- | --- |
 | Data source | CFPB public complaint narratives and product labels | The source supports a realistic routing task but may not represent every institution's complaint channels. |
 | Development data | 2024 data is used for training and model comparison. | A defined development period makes experiments easier to reproduce and audit. |
-| Holdout data | 2025 data is reserved for final out-of-time validation. | Keeping it separate provides a more independent test of future performance. |
+| Holdout data | 2025 was reserved during development, then evaluated once under a precommitted protocol. | The one-time evaluation provides temporal evidence, but the sample is now exhausted as an unbiased holdout. |
 | Cleaning | Light text cleaning preserves most original meaning. | Aggressive cleaning could remove useful financial terms or context. |
 | Duplicate text | Exclude conflicting-label text groups and retain one representative from repeated same-label groups before splitting. | Identical narratives crossing development and test data can inflate internal evaluation metrics. |
 | Missing narratives | Records without usable narratives are removed from modeling data. | A text classifier cannot make a supported text-based prediction without input text. |
@@ -39,15 +39,39 @@ A defined development period makes evaluation easier to audit. However, 2024 com
 
 ## 2025 Holdout Data
 
-The 2025 CFPB data is kept separate as an out-of-time holdout. It must not be used for:
+During development, the 2025 CFPB sample was reserved as a one-time out-of-time holdout. The evaluation plan and file fingerprints were committed before access, and the model, preprocessing, label scope, cohorts, metrics, and routing thresholds were frozen.
 
-- Model training.
-- Feature or preprocessing decisions based on observed outcomes.
-- Model selection.
-- Hyperparameter tuning.
-- Development validation or repeated performance checks.
+The dataset was then evaluated once after the complete 2024 workflow was reproduced. It was not used for:
 
-The holdout should be used only for final out-of-time evaluation after the model, preprocessing, label scope, and evaluation plan are fixed using 2024 data. Repeatedly checking 2025 results during development would leak future-period information and weaken the independent test.
+- model fitting or refitting;
+- feature, preprocessing, or category decisions based on observed outcomes;
+- model or hyperparameter selection;
+- probability calibration;
+- routing-threshold selection; or
+- repeated development validation.
+
+The 2025 sample is now exhausted as an unbiased holdout. Any future model or policy change requires a new untouched validation period.
+
+## Committed 2025 Cohort Decisions
+
+### Primary leakage-resistant cohort
+
+The 30,156-row primary cohort:
+
+- excludes normalized-text overlap with the locked 2024 development and final-test partitions;
+- excludes every conflicting-label normalized-text group;
+- retains one representative from each remaining repeated same-label group; and
+- serves as the headline generalization estimate.
+
+### Secondary operational sensitivity cohort
+
+The 49,225-row secondary cohort:
+
+- retains all otherwise eligible rows in the locked eight-category scope;
+- retains repeated text and cross-year overlap; and
+- is reported only as a sensitivity view, not as the headline result.
+
+The completed audit found 775 familiar out-of-scope rows and no unfamiliar or changed product labels. Descriptive diagnostics showed changes in category proportions, modest text and locked-vocabulary drift, and lower top decision scores and margins in the primary cohort. Primary classification and routing performance weakened relative to the locked 2024 reference. These findings describe observed differences; they do not establish statistical significance, causality, or a specific cause.
 
 ## Text Cleaning Decisions
 
@@ -137,10 +161,10 @@ Future complaint data may differ from the 2024 development data. Important drift
 - Economic changes that alter complaint volume and subject matter.
 - Changes to product categories, category definitions, or class proportions.
 
-Drift can affect narrative text and target labels. Monitoring should compare future data with development data using class distributions, missing-value rates, text lengths, vocabulary and confidence changes, and per-class performance when labels become available.
+Drift can affect narrative text and target labels. Monitoring should compare future data with development data using class distributions, missing-value rates, text lengths, locked-vocabulary behavior, decision-score and margin distributions, and per-class performance when labels become available.
 
 Material drift should trigger review of the model and label mapping. New or changed categories may require updated training data, revised mappings, retraining, and a new independent holdout period.
 
 ## Summary
 
-The project uses CFPB narratives and product categories, with 2024 reserved for development and 2025 protected as an out-of-time holdout. Key risks include class imbalance, missing-narrative selection bias, label noise, historical category limitations, and future drift. Accuracy, macro F1, weighted F1, and per-class metrics should be interpreted with these risks, and data decisions should remain documented.
+The project uses CFPB narratives and product categories, with 2024 used for development and 2025 protected during development before one-time out-of-time evaluation. The primary leakage-resistant cohort remains the headline result, while the secondary operational cohort is a sensitivity view. The 2025 sample is now exhausted as an unbiased holdout. Key risks include class imbalance, missing-narrative selection bias, label noise, historical category limitations, and temporal drift; metrics should be interpreted with these risks and data decisions kept versioned.
