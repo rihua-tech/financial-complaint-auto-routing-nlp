@@ -2,6 +2,11 @@
 
 Status: Corrected aggregate error analysis completed for the leakage-safe Version 1 baseline evaluation.
 
+> **Scope clarification:** This report covers only the locked 2024 internal
+> evaluation. The 2025 dataset had not been opened when this analysis was
+> originally completed. The later one-time 2025 out-of-time evaluation is
+> documented separately in [2025 Holdout Results](2025_holdout_results.md).
+
 ## Purpose
 
 This report summarizes category-level results and confusion patterns for the selected TF-IDF + Linear SVM baseline after duplicate-text leakage remediation. It contains aggregate metrics only and does not include complaint narratives or row-level predictions.
@@ -16,7 +21,8 @@ This report summarizes category-level results and confusion patterns for the sel
 - Development/test normalized-text group overlap: 0.
 - Selected model: TF-IDF + Linear SVM.
 - Product categories: 8.
-- 2025 holdout data: not loaded or used.
+- 2025 scope: not used in this 2024 analysis; the later one-time evaluation is
+  reported separately.
 
 Corrected aggregate results are 0.8712 accuracy, 0.7671 macro F1, and 0.8715 weighted F1. These are internal development results, not production-readiness evidence, routing-policy validation, or 2025 performance.
 
@@ -71,5 +77,7 @@ The corrected row-normalized confusion matrix is available at [`reports/figures/
 - Use the fitted pipeline's `classes_` attribute when mapping future decision-score columns to product labels.
 - Treat Money transfer and Vehicle loan or lease as higher-risk categories during future routing-policy analysis.
 - Keep the final internal test fold separate from future routing-threshold selection.
-- Keep the 2025 dataset untouched until the dedicated out-of-time validation issue.
+- Treat the completed 2025 evaluation as retrospective evidence and do not
+  reuse it for tuning, calibration, threshold changes, or model selection;
+  future unbiased promotion evidence requires a new untouched time period.
 - Continue excluding complaint narratives and row-level predictions from committed evaluation reports.

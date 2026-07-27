@@ -4,6 +4,14 @@ Status: **Phase 1 protocol reviewed and ready to be locked in this commit. Phase
 
 Related issue: [GitHub Issue #15](https://github.com/rihua-tech/financial-complaint-auto-routing-nlp/issues/15)
 
+> **Post-execution notice:** This file preserves the validation protocol
+> committed before the 2025 holdout was opened. Phase 2 was later completed
+> without changing the locked model, preprocessing, cohort definitions,
+> evaluation metrics, or routing thresholds. See
+> [2025 Holdout Results](2025_holdout_results.md) for the completed evaluation.
+> The 2025 dataset is now exhausted as an unbiased holdout and must not be
+> reused for future tuning or model-selection decisions.
+
 This protocol freezes the Version 1 evaluation plan before the 2025 CFPB
 out-of-time holdout is opened, parsed, previewed, summarized, or evaluated. The
 2025 CSV was read only as an uninterpreted byte stream to calculate its
