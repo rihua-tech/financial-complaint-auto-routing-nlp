@@ -2,7 +2,7 @@
 
 ## Scope
 
-This repository implements a notebook-centered internal prototype for CFPB complaint classification, leakage-safe evaluation, and human-review routing analysis. It does not implement a production prediction service.
+This repository implements a notebook-centered AI/NLP business solution prototype for CFPB complaint classification, leakage-safe evaluation, human-review routing, and one-time out-of-time validation. It does not implement a production prediction service.
 
 ## Architecture
 
@@ -19,9 +19,15 @@ flowchart LR
         H --> I{Both routing thresholds pass?}
         I -->|Yes| J[Automatic-route recommendation]
         I -->|No| K[Human-review recommendation]
+        V[Precommitted 2025 protocol] --> W[2024 reproduction and 2025 integrity gates]
+        B2[Local Git-ignored 2025 CSV] --> W
+        F --> W
+        W --> X[Primary and secondary cohort evaluation]
+        X --> Y[Classification routing and drift results]
         G --> L[Aggregate reports]
         J --> L
         K --> L
+        Y --> L
     end
 
     subgraph Future["Future production components"]
@@ -49,7 +55,11 @@ The completed and future subgraphs are intentionally separate. The repository pr
 | Routing analysis | Completed | Locked score and margin thresholds |
 | Routing-rule implementation | Completed for prototype use | `src/routing_rules.py` |
 | Routing-rule tests | Completed | `tests/test_routing_rules.py` |
-| Aggregate reporting | Completed | Results summary, error analysis, model card, and figures |
+| Pre-holdout protocol | Completed before 2025 access | `reports/2025_validation_protocol.md` |
+| 2024 reproduction and 2025 integrity gates | Completed | `notebooks/07_2025_out_of_time_validation.ipynb` |
+| 2025 cohort construction | Completed | Primary leakage-resistant and secondary operational cohorts |
+| 2025 out-of-time evaluation | Completed | Classification, routing, drift, and 2024-versus-2025 comparisons |
+| Aggregate reporting | Completed | Results summaries, model card, holdout report, and figures |
 | Fitted model artifact | Local only | Git-ignored; not distributed in the repository |
 | Prediction interface | Not implemented | `src/predict.py` remains a placeholder |
 | Production deployment | Not implemented or approved | Future work |
@@ -60,7 +70,7 @@ The completed and future subgraphs are intentionally separate. The repository pr
 
 The data-ingestion notebook retrieves public CFPB complaints and validates required fields, date coverage, complaint identifiers, narrative availability, and product labels. Raw CSV files are stored locally under `data/raw/` and ignored by Git.
 
-Version 1 uses only the validated 2024 sample. The separate 2025 file was not loaded or used for model selection, internal evaluation, or routing-threshold selection.
+Version 1 development, model selection, internal evaluation, and routing-threshold selection used only the validated 2024 sample. The separate 2025 file was protected during development and later evaluated once as the locked out-of-time holdout.
 
 ### 2. Text Preparation
 
@@ -115,15 +125,34 @@ The repository identifies cases for review but does not implement a review queue
 - service-level expectations; and
 - feedback and quality-review processes.
 
-### 7. Reporting
+### 7. Locked 2025 Out-of-Time Validation
+
+Before opening the 2025 CSV, the project committed the model configuration, cleaning rules, file fingerprints, classes, cohorts, metrics, comparison rules, and routing thresholds. Notebook 07 then:
+
+- reproduced the complete locked 2024 reference gate;
+- verified the 2025 file path, size, fingerprint, and ingestion structure;
+- constructed the 30,156-row primary leakage-resistant headline cohort;
+- constructed the 49,225-row secondary operational sensitivity cohort, which retains repeated text and cross-year overlap; and
+- evaluated classification, routing, category behavior, and descriptive drift without fitting or changing the workflow.
+
+Primary 2025 accuracy was 0.8315, Macro F1 was 0.7527, and routing coverage was 0.7251 with 0.9203 routed accuracy and a 0.0797 misroute rate. These weaker headline results are reported directly; the more favorable secondary cohort remains a sensitivity view.
+
+The 2025 sample is now exhausted as an unbiased holdout. Any future model or routing-policy change requires a new untouched validation period.
+
+### 8. Reporting
 
 Completed reporting includes:
 
+- `notebooks/07_2025_out_of_time_validation.ipynb`;
+- `reports/2025_validation_protocol.md`;
+- `reports/2025_holdout_results.md`;
 - `reports/results_summary.md`;
 - `reports/error_analysis.md`;
 - `reports/model_card.md`;
 - `reports/figures/confusion_matrix.png`; and
-- `reports/figures/routing_decision_score_summary.png`.
+- `reports/figures/routing_decision_score_summary.png`;
+- `reports/figures/2025_confusion_matrix.png`; and
+- `reports/figures/2024_vs_2025_comparison.png`.
 
 ## Future Production Architecture
 
