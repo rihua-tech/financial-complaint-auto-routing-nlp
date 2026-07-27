@@ -61,7 +61,7 @@ The completed and future subgraphs are intentionally separate. The repository pr
 | 2025 out-of-time evaluation | Completed | Classification, routing, drift, and 2024-versus-2025 comparisons |
 | Aggregate reporting | Completed | Results summaries, model card, holdout report, and figures |
 | Fitted model artifact | Local only | Git-ignored; not distributed in the repository |
-| Prediction interface | Not implemented | `src/predict.py` remains a placeholder |
+| Prediction interface | Not implemented | No supported inference module, API, CLI, or batch service is provided |
 | Production deployment | Not implemented or approved | Future work |
 
 ## Completed Data Flow
