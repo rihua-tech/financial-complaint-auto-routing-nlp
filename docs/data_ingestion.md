@@ -26,9 +26,15 @@ This local-first behavior avoids unnecessary fresh API downloads during normal n
 The current data-ingestion strategy creates two separate year-based datasets:
 
 - The 2024 dataset is for model development.
-- The 2025 dataset is for future holdout / out-of-time validation.
+- The 2025 dataset was originally reserved as a one-time out-of-time holdout.
+  It was later evaluated once under the locked protocol in Notebook 07 and is
+  now exhausted as an unbiased holdout.
 
 The 2024 and 2025 datasets are downloaded separately, saved separately, and should not be combined and randomly split. This supports a more realistic business workflow where models are developed on historical complaints and later tested on future complaints.
+
+The completed 2025 sample must remain separate from future model development,
+tuning, calibration, threshold changes, and model selection. Future unbiased
+validation requires a new untouched time period.
 
 ## Sampling Strategy
 
@@ -77,7 +83,12 @@ It preserves the original CFPB API columns in each raw local CSV for traceabilit
 - Rows backfilled within month: 0
 - Monthly shortfall after backfill: 0
 
-## 2025 Future Holdout / Out-of-Time Dataset
+## 2025 Completed One-Time Holdout Dataset
+
+This sample was evaluated once under the committed protocol in
+`notebooks/07_2025_out_of_time_validation.ipynb`. It is retained as
+retrospective out-of-time evidence and is no longer available as an untouched
+holdout for future development decisions.
 
 - Rows: 50,000
 - Raw API columns: 17

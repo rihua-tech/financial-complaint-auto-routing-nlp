@@ -157,6 +157,10 @@ The 2025 sample is no longer an untouched, unbiased holdout. It was not used to 
 - Git, GitHub, and GitHub Actions
 - CFPB Consumer Complaint Database API
 
+CI validates Python syntax, core imports, and routing-rule unit tests. It does
+not execute the data-dependent notebooks, retrain the classifier, or reproduce
+the local model artifact.
+
 ## Reproduce the Workflow
 
 1. Use Python 3.11 and install the listed dependencies with `python -m pip install -r requirements.txt`.
@@ -236,6 +240,7 @@ Raw and processed CSV files, complaint narratives, row-level predictions, and fi
 
 ## Documentation
 
+- [Complete Project Report (PDF)](Financial_Complaint_Auto_Routing_NLP_Project_Report.pdf)
 - [Business case](docs/business_case.md)
 - [Data decisions and quality notes](docs/data_decisions.md)
 - [Data-ingestion design](docs/data_ingestion.md)
