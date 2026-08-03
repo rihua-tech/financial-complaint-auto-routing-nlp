@@ -6,6 +6,8 @@ The modeling objective is to classify public CFPB consumer complaint narratives 
 
 This document preserves the original modeling rationale and records what was completed for Version 1. It does not authorize production use.
 
+**Current-status note:** This document remains the historical Version 1 modeling plan and record. Version 2 has since been completed as a frozen DistilBERT challenger. Its precommitted design, development evidence, frozen artifacts, matched 2024 comparison, retrospective 2025 comparison, and limitations are documented in the linked Version 2 sources below.
+
 ## Input, Target, and Data Boundaries
 
 - Input text: `complaint_what_happened`.
@@ -150,19 +152,28 @@ The 2025 sample is no longer an untouched, unbiased holdout. It cannot be reused
 - `src/routing_rules.py`: reusable routing-rule logic.
 - `tests/test_routing_rules.py`: focused routing-rule tests.
 
-The fitted pipeline is local and Git-ignored. A reusable production training or inference service is not complete.
+The fitted pipeline is local and Git-ignored. No supported API, CLI, batch service, dashboard, or deployed inference system is provided.
 
-## Future Work
+## Subsequent Version 2 Work — Completed
 
-### DistilBERT
+The follow-on DistilBERT experiment preserved the Version 1 data boundary. It trained only on the locked 26,433-row 2024 development partition, used five fixed development folds to produce one OOF result per development row, and then froze the final model and tokenizer. The separate Version 2 routing thresholds—minimum top softmax score `0.22` and top-two margin `0.91`—were selected from development OOF outputs only; the Version 1 thresholds were not reused because the score scales differ. Linear SVM decision scores and DistilBERT softmax scores and margins are uncalibrated model signals, not probabilities or real-world confidence.
 
-DistilBERT is a future Version 2 comparison, not part of Version 1. Any experiment should:
+The frozen models were compared on the same 6,609-row 2024 final internal-test partition. This was a matched benchmark, not a new untouched Version 2 holdout. Version 2 improved Accuracy from 0.8712 to 0.8882, Macro F1 from 0.7671 to 0.7949, Weighted F1 from 0.8715 to 0.8859, and coverage from 0.7705 to 0.8177. Its routed accuracy was slightly lower (0.9476 versus 0.9503), its misroute rate was slightly higher (0.0524 versus 0.0497), and its artifact and inference requirements were substantially larger.
 
-- use the same leakage-safe data boundaries;
-- compare against the locked TF-IDF + Linear SVM baseline;
-- report compute, latency, monitoring, and interpretability tradeoffs; and
-- use new development data and a new untouched validation period rather than reusing the exhausted 2025 holdout.
+The later 2025 V1-versus-V2 comparison was retrospective. On the 30,156-row primary leakage-resistant headline cohort, Version 2 produced small classification and coverage gains over Version 1 but slightly worse aggregate routed accuracy and misroute rate, with material debt-collection and student-loan category risk. The 49,225-row secondary operational cohort remains a sensitivity view because it retains repeated texts and cross-year overlap. Neither model, tokenizer, cohort, routing policy, or threshold changed in response to 2025 results.
 
-### Production Readiness
+Current Version 2 evidence is recorded in:
+
+- [Version 2 experiment plan](v2_experiment_plan.md);
+- [Version 2 data manifest](../reports/v2_data_manifest.md);
+- [Version 2 development results](../reports/v2_development_results.md);
+- [Version 2 model manifest](../reports/v2_model_manifest.md);
+- [shared 2024 V1-versus-V2 comparison](../reports/v1_v2_2024_comparison.md);
+- [retrospective 2025 V1-versus-V2 results](../reports/v2_2025_retrospective_results.md); and
+- [Version 2 model card](../reports/v2_model_card.md).
+
+Version 1 remains the temporally validated benchmark and practical low-compute option. Version 2 remains the frozen transformer challenger. Independent Version 2 promotion evidence requires a new untouched period, currently planned as full-year 2026; the completed shared-benchmark and retrospective evidence does not establish a final champion or production approval.
+
+## Future Production Readiness
 
 Future production consideration would require probability calibration or an explicitly non-probabilistic policy, category-specific error costs, privacy and security controls, fairness analysis, human-review operations, monitoring, drift detection, deployment design, and governance approval.
