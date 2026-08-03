@@ -1,9 +1,11 @@
-pandas
-numpy
-scikit-learn
-matplotlib
-seaborn
-requests
-joblib
-jupyter
-notebook
+# Version 1 reproducible environment - Python 3.11.15
+pandas==3.0.3
+numpy==2.4.6
+scipy==1.16.3
+scikit-learn==1.9.0
+matplotlib==3.10.6
+seaborn==0.13.2
+requests==2.32.5
+joblib==1.5.2
+jupyter==1.1.1
+notebook==7.4.5
