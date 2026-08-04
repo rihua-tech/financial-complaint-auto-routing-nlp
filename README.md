@@ -10,7 +10,9 @@ Financial institutions, fintech firms, and complaint operations teams receive wr
 
 This repository implements an internal NLP prototype that compares a locked TF-IDF + Linear SVM benchmark with a frozen DistilBERT challenger for predicting one of eight CFPB product categories from a public consumer complaint narrative. Each model has a separately selected, development-only score policy that converts its recommendation into either automatic routing or human review. The prototype does not make legal or factual determinations and is not a deployed production service.
 
-## Locked Version 1 and 2024 Reference at a Glance
+**Final outcome:** Version 1 remains the temporally validated benchmark. Version 2 improved classification and routing coverage, but it remains a frozen challenger because it did not establish a clear routed-risk or operational advantage and still requires evaluation on a new untouched period.
+
+## Version 1 Evaluation Scope and 2024 Reference at a Glance
 
 | Item | Verified result |
 | --- | --- |
@@ -60,7 +62,7 @@ These are demonstrated analytical capabilities, not claims of realized workload 
 8. Fine-tuned a DistilBERT challenger through five fixed development folds, generated one OOF prediction per development row, and froze its model, tokenizer, and routing policy before benchmark scoring.
 9. Compared both frozen models on the shared 2024 benchmark and then retrospectively on the existing primary and secondary 2025 cohorts without changing either model or policy.
 
-### Model Comparison
+### Version 1 Baseline Model Comparison
 
 | Model | Development CV Macro F1 |
 | --- | ---: |
@@ -169,33 +171,31 @@ The retrospective evidence is mixed. Version 2 improved primary Accuracy, Macro 
 
 ![Frozen V1 and V2 across the shared 2024 benchmark and retrospective 2025 cohorts](reports/figures/v1_v2_2025_retrospective_comparison.png)
 
-**Project status:** Version 1 is the temporally validated benchmark. Version 2 is the frozen transformer challenger with matched 2024 evaluation and retrospective 2025 comparison. Independent Version 2 temporal promotion evidence remains pending a new untouched period.
+**Evidence status:** The 2024 comparison is a shared matched benchmark and the 2025 comparison is retrospective; independent Version 2 promotion evidence requires a new untouched period.
 
 ## Tech Stack
 
-- Python, Pandas, NumPy, and Requests
+- Python, Pandas, NumPy, SciPy, and Requests
 - Jupyter Notebook
 - Scikit-learn pipelines and TF-IDF
 - Logistic Regression, Multinomial Naive Bayes, and Linear SVM
 - PyTorch, Transformers, DistilBERT, and dynamic token padding
 - Matplotlib and Seaborn
-- `unittest` routing-rule tests
+- `unittest` ingestion and routing-rule tests
 - Git, GitHub, and GitHub Actions
 - CFPB Consumer Complaint Database API
 
-CI validates Python syntax, core imports, and routing-rule unit tests. It does
-not execute the data-dependent notebooks, retrain the classifier, or reproduce
-the local model artifact.
+CI installs the pinned Version 1 requirements, validates Python syntax, verifies core imports, and discovers and runs mocked ingestion and routing-rule unit tests. It does not execute the data-dependent notebooks, retrain either model, reproduce local model artifacts, or access protected local CSV files.
 
 ## Reproduce the Workflow
 
-1. Use Python 3.11 and install the Version 1 dependencies with `python -m pip install -r requirements.txt`.
+1. Use Python 3.11.15 and install the Version 1 dependencies with `python -m pip install -r requirements.txt`.
 2. Run Notebooks 01 through 05 in numerical order, then run Notebook 07 for the locked out-of-time validation. Notebook 06 is a standalone course-submission notebook.
 3. Keep raw and processed CSV files and fitted model artifacts local and Git-ignored.
 4. Use the exact locked environment documented in `reports/2025_validation_protocol.md` for Notebook 07.
 5. For Version 2, create a separate environment from `requirements-v2.txt`, then run Notebooks 08 through 11 in numerical order. The ignored frozen artifacts from Notebook 09 are required for Notebooks 10 and 11.
 
-The unpinned `requirements.txt` supports setup but does not guarantee exact compatibility with the saved model artifact.
+The pinned `requirements.txt` records the validated Version 1 Python 3.11.15 environment; Version 2 uses the separate pinned `requirements-v2.txt` environment. Frozen model artifacts remain local and Git-ignored. Exact pins improve reproducibility but do not guarantee identical behavior across operating systems or hardware.
 
 ## Current Status
 
@@ -203,7 +203,7 @@ Completed:
 
 - 2024 ingestion, cleaning, EDA, leakage remediation, and group-aware model selection
 - locked 2024 internal classification and decision-score routing evaluation
-- tested routing-rule logic and aggregate model documentation
+- deterministic mocked data-ingestion tests and routing-rule tests covering boundaries, validation, ties, non-finite values, and class-order safety
 - precommitted holdout protocol and reproducible 2024 entry gate
 - locked 2025 classification, routing, drift, and cohort-sensitivity evaluation
 - five-fold DistilBERT development training and frozen final Version 2 artifact
@@ -222,23 +222,17 @@ The fitted Version 1 pipeline and frozen Version 2 artifact remain local and Git
 
 ## Limitations
 
-- The evaluations use sampled 2024 and 2025 CFPB data, not institution-specific intake data or the complete operational population.
-- Within each daily sampling window, CFPB API pagination may still reflect API sort order rather than fully random selection.
-- Public narratives and historical CFPB labels may contain ambiguity, label noise, and selection bias.
-- The dominant credit-reporting category strongly influences weighted metrics.
-- Smaller categories have lower support and less stable estimates.
-- Exact normalized-text hashing does not detect paraphrased near-duplicates.
-- Linear SVM decision scores and margins are not calibrated probabilities.
-- DistilBERT softmax scores and margins are also uncalibrated, and the locked 256-token limit truncates a material share of narratives.
-- Routing thresholds are project assumptions and have not received production or stakeholder approval.
-- No fairness evaluation, probability calibration, operational workload study, or production monitoring result is claimed.
-- Complaint narratives may contain sensitive information; any operational use would require stronger privacy controls, access restrictions, retention rules, and governance.
-- The one-time 2025 sample has been evaluated and is no longer an untouched holdout; future changes require a new untouched validation period.
-- The 2025 headline primary result showed weaker classification and routing performance than the locked 2024 reference.
+- Results use sampled public CFPB data, not institution-specific intake or the complete operational population, and daily API pagination may retain API-order sampling effects.
+- Published narratives and historical labels may contain ambiguity, label noise, and selection bias; exact normalized-text matching does not detect paraphrased near-duplicates.
+- Credit reporting dominates the data and strongly influences weighted metrics, while smaller categories and routed subsets have less-stable estimates.
+- Linear SVM decision scores and DistilBERT softmax scores and margins are uncalibrated model signals; the locked 256-token ceiling also truncates a material share of transformer inputs.
+- Routing thresholds are project assumptions, not approved operating limits; no fairness, calibration, workload, monitoring, or stakeholder-approved risk evidence is claimed.
+- Complaint narratives may contain sensitive information; operational use would require stronger privacy and security controls, access restrictions, retention rules, and governance.
+- The primary 2025 headline result showed weaker classification and routing behavior than the locked 2024 reference; the evaluated sample is exhausted as unbiased evidence, so future changes require a new untouched validation period.
 
 ## Roadmap
 
-1. Preserve the completed Version 1 out-of-time evaluation and frozen V1-versus-V2 retrospective comparisons; use a new untouched period, currently planned as full-year 2026, for future model or policy changes and independent Version 2 promotion evidence.
+1. Use a new untouched period, currently planned as full-year 2026, to evaluate future model or policy changes and provide independent Version 2 promotion evidence.
 2. Review category-specific error costs and routing thresholds with operational stakeholders without tuning against the exhausted 2025 holdout.
 3. Evaluate probability calibration and refine category-specific human-review policies using development data and a newly protected validation design.
 4. Add privacy, security, fairness, explainability, monitoring, and drift controls before any production consideration.
@@ -275,8 +269,12 @@ The fitted Version 1 pipeline and frozen Version 2 artifact remain local and Git
 | `reports/v2_model_card.md` | Frozen Version 2 intended use, evidence, limitations, and governance boundaries |
 | `docs/system_design.md` | Completed prototype components and future architecture |
 | `docs/portfolio_summary.md` | Portfolio description and resume-ready bullets |
+| `src/download_data.py` | Local-first CFPB ingestion, API retry handling, validation, and local save utilities |
 | `src/routing_rules.py` | Tested routing decision logic |
+| `tests/test_download_data.py` | Mocked API, retry, validation, local-first, and output-path tests |
 | `tests/test_routing_rules.py` | Routing boundary, validation, and class-order tests |
+| `requirements.txt` | Pinned Version 1 Python 3.11.15 environment |
+| `requirements-v2.txt` | Separate pinned Version 2 transformer environment |
 
 Raw and processed CSV files, complaint narratives, row-level predictions, and fitted model artifacts remain local and Git-ignored.
 
