@@ -280,7 +280,7 @@ Raw and processed CSV files, complaint narratives, row-level predictions, and fi
 
 ## Documentation
 
-- [Version 1 Course Project Report (PDF)](Financial_Complaint_Auto_Routing_NLP_Project_Report.pdf)
+- [Complete NLP Project Report (PDF)](Financial_Complaint_Auto_Routing_NLP_Project_Report.pdf)
 - [Business case](docs/business_case.md)
 - [Data decisions and quality notes](docs/data_decisions.md)
 - [Data-ingestion design](docs/data_ingestion.md)
