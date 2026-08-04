@@ -12,6 +12,12 @@ This repository implements an internal NLP prototype that compares a locked TF-I
 
 **Final outcome:** Version 1 remains the temporally validated benchmark. Version 2 improved classification and routing coverage, but it remains a frozen challenger because it did not establish a clear routed-risk or operational advantage and still requires evaluation on a new untouched period.
 
+## Architecture Overview
+
+![Financial Complaint Auto-Routing NLP Architecture](assets/architecture-overview.png)
+
+This diagram summarizes the leakage-safe data flow, parallel Version 1 and Version 2 modeling paths, development-selected routing policies, human-review workflow, shared 2024 benchmark comparison, and retrospective 2025 evaluation.
+
 ## Version 1 Evaluation Scope and 2024 Reference at a Glance
 
 | Item | Verified result |
