@@ -188,7 +188,7 @@ Raw and processed CSV files, complaint narratives, row-level predictions, and fi
 
 ## Documentation and Evidence
 
-- [Complete Project Report (PDF)](Financial_Complaint_Auto_Routing_NLP_Project_Report.pdf)
+- [Complete Project Report (PDF)](./Complaint_Routing_NLP_Report.pdf)
 - [Business case](docs/business_case.md) and [modeling methodology](docs/modeling_plan.md)
 - [2024 and 2025 results summary](reports/results_summary.md)
 - [2025 temporal evaluation](reports/2025_holdout_results.md)
