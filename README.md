@@ -6,170 +6,111 @@
 
 ## Project Overview
 
-Financial institutions, fintech firms, and complaint operations teams receive written complaints that must be routed to the appropriate product team. Manual triage can be slow and inconsistent, while an incorrect automated route can delay review or create operational risk.
+Financial institutions, fintech firms, and complaint operations teams must route written complaints to the right product team. This applied NLP and Data Science project frames that task as an eight-class classification problem using public CFPB complaint narratives, while preserving a Human Review path for uncertain recommendations.
 
-This repository implements an internal NLP prototype that compares a locked TF-IDF + Linear SVM benchmark with a frozen DistilBERT challenger for predicting one of eight CFPB product categories from a public consumer complaint narrative. Each model has a separately selected, development-only score policy that converts its recommendation into either automatic routing or human review. The prototype does not make legal or factual determinations and is not a deployed production service.
+The offline decision-support prototype compares a TF-IDF + Linear SVM Version 1 benchmark with a frozen DistilBERT Version 2 challenger. Each model uses its own development-selected routing policy to return either an Auto-Route recommendation or Human Review. Neither model makes legal or factual determinations, and the repository is not a deployed complaint-routing service.
 
-**Final outcome:** Version 1 remains the temporally validated benchmark. Version 2 improved classification and routing coverage, but it remains a frozen challenger because it did not establish a clear routed-risk or operational advantage and still requires evaluation on a new untouched period.
+**Final outcome:** Retain Version 1 as the temporally validated benchmark. Version 2 improved aggregate classification and coverage, but remains a frozen challenger pending evidence from a new untouched future period.
 
-## Architecture Overview
+## Key Results
+
+- **Leakage audit:** 3,876 of 9,840 original test rows (39.39%) overlapped training; corrected group-aware evaluation reduced development/final-test normalized-text overlap to zero.
+- **Shared 2024 benchmark:** DistilBERT improved Macro F1 from 0.7671 to 0.7949 and routing coverage from 77.05% to 81.77%.
+- **Selective routing:** Version 1 achieved 95.03% routed accuracy at 77.05% coverage on the locked 2024 final internal test.
+- **Temporal evidence:** Both frozen models weakened on the stricter 30,156-row 2025 leakage-resistant primary cohort.
+- **Decision:** Version 1 remains the temporally validated benchmark; Version 2 remains a frozen challenger until a new untouched period supports promotion.
+
+## Evaluation at a Glance
+
+| Item | Locked scope |
+| --- | --- |
+| Data | Sampled public CFPB consumer complaint narratives |
+| Prediction task | Eight product categories |
+| Version 1 | TF-IDF + Linear SVM benchmark |
+| Version 2 | Frozen DistilBERT challenger |
+| 2024 development / final test | 26,433 / 6,609 rows |
+| Leakage boundary | Group-aware; zero normalized-text overlap |
+| 2025 headline evidence | 30,156-row primary leakage-resistant cohort |
+| Decision output | Auto-Route recommendation or Human Review |
+
+## Architecture
 
 ![Financial Complaint Auto-Routing NLP Architecture](assets/architecture-overview.png)
 
-This diagram summarizes the leakage-safe data flow, parallel Version 1 and Version 2 modeling paths, development-selected routing policies, human-review workflow, shared 2024 benchmark comparison, and retrospective 2025 evaluation.
+Public CFPB complaint data flows through leakage-safe preparation, parallel V1/V2 modeling, model-specific selective-routing rules, an Auto-Route recommendation or Human Review, and matched and temporal evaluation.
 
-## Version 1 Evaluation Scope and 2024 Reference at a Glance
+## Business Problem and Workflow
 
-| Item | Verified result |
-| --- | --- |
-| Data source | Public CFPB consumer complaint narratives |
-| Input / target | `complaint_what_happened` narrative / `product` category |
-| Development period | 2024 only |
-| 2025 out-of-time sample | 50,000 raw rows; evaluated once under the committed locked protocol |
-| Validated 2024 input sample | 50,000 rows |
-| Rows after duplicate-leakage remediation | 33,042 |
-| Development / final internal test | 26,433 / 6,609 |
-| Product categories | 8 |
-| Development/test normalized-text overlap | 0 groups |
-| Selected model | TF-IDF + Linear SVM |
-| Final internal-test accuracy | 0.8712 |
-| Final internal-test Macro F1 | 0.7671 |
-| Final internal-test Weighted F1 | 0.8715 |
+The prototype supports complaint intake, product operations, compliance operations, and risk analytics with this decision-support flow:
 
-These rows summarize the internal 2024 reference. The completed 2025 out-of-time results are reported separately below; neither evaluation establishes production readiness.
+`Complaint narrative -> validation -> text preparation -> model recommendation -> routing policy -> Auto-Route recommendation or Human Review -> aggregate evaluation`
 
-## Business Users and Workflow
+Human Review is intentional: tied, invalid, non-finite, or below-threshold model signals make a case ineligible for an Auto-Route recommendation.
 
-The prototype is relevant to complaint intake, product operations, compliance operations, and risk analytics teams. It demonstrates this decision-support flow:
+**Potential decision-support value:** improve routing consistency for clear cases, direct ambiguous complaints to Human Review, and expose category-level routing risk for operational review. These are potential capabilities, not claims of realized workload reduction, cost savings, or production impact.
 
-`Complaint narrative -> validation -> text preparation -> model recommendation -> routing rules -> automatic-route recommendation or human review -> aggregate reporting`
+## Technical Approach
 
-Human review remains central. The implemented routing rules assign complaints to review when either score threshold fails or model signals are tied, invalid, non-finite, or otherwise unusable. Higher-risk categories are not automatically assigned to review by the current code; a future business policy may add category-specific review controls.
+1. **Data acquisition and quality audit:** build and validate a sampled 2024 CFPB narrative dataset across eight product categories.
+2. **Leakage remediation and evaluation design:** remove conflicts and repeated texts, then keep normalized-text groups intact in splitting and cross-validation.
+3. **Classical ML benchmark:** compare TF-IDF pipelines with Logistic Regression, Multinomial Naive Bayes, and Linear SVM; select Linear SVM using development-only group-aware Macro F1.
+4. **Human-in-the-loop routing:** select two-threshold policies from development out-of-fold signals and evaluate coverage, review volume, routed accuracy, and misroutes.
+5. **Frozen transformer challenger:** train DistilBERT on the locked 2024 development boundary, then compare frozen V1/V2 models on the shared 2024 benchmark and retrospectively on the existing 2025 cohorts.
 
-### Potential Business Value
-
-The prototype demonstrates how NLP-assisted routing could:
-
-- support more consistent initial product-category recommendations;
-- prioritize ambiguous or lower-signal complaints for human review; and
-- provide aggregate visibility into routing coverage, review volume, and category-level risk.
-
-These are demonstrated analytical capabilities, not claims of realized workload reduction, cost savings, or production impact.
-
-## Completed Technical Approach
-
-1. Acquired and validated a monthly-balanced, daily-stratified 2024 CFPB sample, then applied light text cleaning.
-2. Completed aggregate EDA, label review, and missing-value, outlier, duplicate, and conflict audits.
-3. Removed conflicting-label text groups, retained one representative from each repeated same-label group, and used group-aware splitting to prevent normalized-text leakage.
-4. Compared TF-IDF pipelines with Logistic Regression, Multinomial Naive Bayes, and Linear SVM, selecting Linear SVM through development-only cross-validation.
-5. Evaluated the locked model once on the 6,609-row 2024 final internal test, with zero normalized-text overlap between the development and final-test partitions.
-6. Selected score and margin thresholds from development out-of-fold results, then tested the human-review routing policy on the final internal test.
-7. Precommitted the 2025 validation protocol, reproduced the 2024 reference gate, and evaluated the unchanged workflow for out-of-time classification, routing, and drift.
-8. Fine-tuned a DistilBERT challenger through five fixed development folds, generated one OOF prediction per development row, and froze its model, tokenizer, and routing policy before benchmark scoring.
-9. Compared both frozen models on the shared 2024 benchmark and then retrospectively on the existing primary and secondary 2025 cohorts without changing either model or policy.
-
-### Version 1 Baseline Model Comparison
-
-| Model | Development CV Macro F1 |
+| Version 1 development comparison | Group-aware CV Macro F1 |
 | --- | ---: |
 | TF-IDF + Logistic Regression | 0.7430 |
 | TF-IDF + Multinomial Naive Bayes | 0.3519 |
 | **TF-IDF + Linear SVM** | **0.7687** |
 
-Values are five-fold group-aware development cross-validation means. Macro F1 was the primary selection metric because the eight categories are imbalanced.
+These are five-fold development cross-validation means. Macro F1 was the selection metric because the categories are imbalanced.
+
+Implementation details and notebook-level evidence are available in the [Repository Guide](#repository-guide) and [Documentation and Evidence](#documentation-and-evidence).
 
 ## Leakage-Safe Evaluation
 
-The original row-level split allowed 3,876 of 9,840 test rows (39.39%) to share normalized text with training. Those earlier results are superseded. The corrected workflow:
+The original row-level split was invalid because 3,876 of 9,840 test rows (39.39%) shared normalized text with training; those earlier results are superseded. The corrected workflow:
 
-- excludes normalized-text groups that have conflicting product labels;
-- retains one row from repeated same-label normalized-text groups;
-- keeps normalized-text groups intact during splitting and cross-validation; and
-- confirms zero normalized-text overlap between development and final internal test data.
+- excludes normalized-text groups with conflicting product labels;
+- retains one representative from repeated same-label groups;
+- keeps groups intact during splitting and cross-validation; and
+- produces 26,433 development rows and 6,609 final-test rows with zero normalized-text overlap.
 
-The corrected confusion matrix and detailed reports are available here:
+![Corrected Version 1 row-normalized confusion matrix](reports/figures/confusion_matrix.png)
 
-- [Row-normalized confusion matrix](reports/figures/confusion_matrix.png)
-- [Technical results summary](reports/results_summary.md)
-- [Aggregate error analysis](reports/error_analysis.md)
-- [Completed Version 1 model card](reports/model_card.md)
-
-The figure below shows where the locked 2024 classifier distinguishes categories well and where category confusion remains.
-
-![Corrected Version 1 confusion matrix](reports/figures/confusion_matrix.png)
-
-### Additional Data and EDA Evidence
-
-- [Data preparation proof](reports/figures/data_preparation_proof.png)
-- [Product distribution chart](reports/figures/product_distribution.png)
-- [Text-length distribution chart](reports/figures/text_length_distribution.png)
+The corrected confusion matrix preserves the category-level error evidence behind the locked 2024 results. See the [technical results summary](reports/results_summary.md) and [aggregate error analysis](reports/error_analysis.md) for the full audit and metrics.
 
 ## Human-in-the-Loop Routing
 
-Linear SVM produces decision scores, not calibrated probabilities. The routing analysis uses two signals:
+Version 1 uses Linear SVM decision scores—not calibrated probabilities—and requires both locked thresholds to pass for an Auto-Route recommendation:
 
-| Locked rule | Threshold |
+| Version 1 routing rule | Threshold |
 | --- | ---: |
 | Minimum top decision score | 0.08 |
 | Minimum top-two score margin | 0.73 |
 
-Both thresholds must pass for an automatic-routing recommendation. Otherwise, the complaint is assigned to human review.
-
-| Final-test routing metric | Result |
+| Locked 2024 final-test metric | Result |
 | --- | ---: |
-| Auto-routing coverage | 0.7705 (77.05%) |
-| Human-review rate | 0.2295 (22.95%) |
-| Auto-routed accuracy | 0.9503 (95.03%) |
-| Auto-routed misroute rate | 0.0497 (4.97%) |
+| Routing coverage | 77.05% |
+| Human Review rate | 22.95% |
+| Routed accuracy | 95.03% |
+| Aggregate routed misroute rate | 4.97% |
 
-The aggregate 4.97% misroute rate does not mean every category remained below 5%. Money transfer/virtual currency/money service, Vehicle loan or lease, Debt collection, and Credit card showed higher observed category-level routing risk. Several of these categories also have small auto-routed counts, so their estimates are less stable.
+The aggregate 4.97% misroute rate **does not mean every class remained below 5%**. Several categories showed higher observed risk, and smaller routed groups have less-stable estimates. The 5% development rule is a project assumption—not a stakeholder-approved or production-validated threshold. [Inspect the routing evidence.](reports/figures/routing_decision_score_summary.png)
 
-- [Routing decision-score summary](reports/figures/routing_decision_score_summary.png)
+## Version 1 vs. Version 2
 
-The figure below shows how the locked routing policy balances automatic-routing coverage, human review, and category-level misroute risk on the 2024 final internal test.
+| Decision evidence | V1 | V2 | Interpretation |
+| --- | ---: | ---: | --- |
+| 2024 Macro F1 | 0.7671 | 0.7949 | V2 higher |
+| 2024 routing coverage | 77.05% | 81.77% | V2 broader |
+| 2024 misroute rate | 4.97% | 5.24% | V1 slightly lower |
+| 2025 primary Macro F1 | 0.7527 | 0.7620 | V2 modestly higher |
+| 2025 primary misroute rate | 7.97% | 8.26% | No routing-risk advantage |
 
-![Decision-score routing summary](reports/figures/routing_decision_score_summary.png)
+Version 2 improved aggregate classification and coverage, but did not establish a clear routed-risk or operational advantage.
 
-The 5% development misroute rule is a project assumption, not a stakeholder-approved or production-validated risk limit. The results demonstrate selective routing behavior; they do not guarantee workload reduction in an operating environment.
-
-## Version 1: 2025 Out-of-Time Validation
-
-**Headline finding:** The locked workflow remained useful, but classification and routing performance weakened on the stricter 2025 leakage-resistant cohort.
-
-The one-time 2025 evaluation kept the fitted model, preprocessing, eight-category scope, `classes_` order, cohort rules, metrics, and routing thresholds fixed. The locked 6,609-row 2024 final internal test remains the reference. The 30,156-row primary leakage-resistant cohort is the headline 2025 result; it excludes normalized-text overlap with either 2024 partition, removes conflicting-label groups, and retains one row per remaining repeated same-label text. The 49,225-row secondary operational cohort retains repeated texts and cross-year overlap and is reported only as a sensitivity view.
-
-| Cohort | Rows | Accuracy | Macro F1 | Weighted F1 | Routing coverage | Review rate | Routed accuracy | Misroute rate |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Locked 2024 final internal test | 6,609 | 0.8712 | 0.7671 | 0.8715 | 0.7705 | 0.2295 | 0.9503 | 0.0497 |
-| **2025 primary leakage-resistant** | **30,156** | **0.8315** | **0.7527** | **0.8306** | **0.7251** | **0.2749** | **0.9203** | **0.0797** |
-| 2025 secondary sensitivity | 49,225 | 0.8771 | 0.7569 | 0.8766 | 0.7809 | 0.2191 | 0.9424 | 0.0576 |
-
-Against the locked 2024 reference, the headline primary result decreased by 0.0397 in accuracy, 0.0145 in Macro F1, 0.0408 in Weighted F1, 0.0453 in routing coverage, and 0.0300 in routed accuracy. Its review rate increased by 0.0453 and its misroute rate increased by 0.0300. Generalization therefore weakened on the leakage-resistant 2025 cohort. The more favorable secondary result does not replace that conclusion because its repeated texts and cross-year overlap make it a different sensitivity cohort.
-
-- [Complete 2025 holdout results](reports/2025_holdout_results.md)
-- [2025 primary confusion matrix](reports/figures/2025_confusion_matrix.png)
-- [2024-versus-2025 comparison](reports/figures/2024_vs_2025_comparison.png)
-
-The figure below compares whether the locked 2024 classification and routing results carried forward to the two 2025 evaluation cohorts.
-
-![Locked 2024 versus 2025 classification and routing comparison](reports/figures/2024_vs_2025_comparison.png)
-
-The 2025 sample is no longer an untouched, unbiased holdout. It was not used to fit, tune, calibrate, or select the model or thresholds, and it must not be reused for those purposes. Any future model or policy change requires a new untouched validation period.
-
-## Version 2 Champion-Challenger Evidence
-
-Version 2 is a frozen DistilBERT challenger trained only on the locked 26,433-row 2024 development set. Its routing thresholds (`0.22` top softmax score and `0.91` top-two margin) were selected from development OOF outputs before any final-test or retrospective 2025 scoring. Transformer softmax scores and margins are uncalibrated model signals, not probabilities.
-
-| Evaluation | Model | Accuracy | Macro F1 | Weighted F1 | Coverage | Routed accuracy | Misroute rate |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Shared 2024 benchmark | V1 | 0.8712 | 0.7671 | 0.8715 | 0.7705 | **0.9503** | **0.0497** |
-| Shared 2024 benchmark | V2 | **0.8882** | **0.7949** | **0.8859** | **0.8177** | 0.9476 | 0.0524 |
-| **2025 primary headline** | V1 | 0.8315 | 0.7527 | 0.8306 | 0.7251 | **0.9203** | **0.0797** |
-| **2025 primary headline** | V2 | **0.8404** | **0.7620** | **0.8364** | **0.7571** | 0.9174 | 0.0826 |
-| 2025 secondary sensitivity | V1 | **0.8771** | 0.7569 | **0.8766** | 0.7809 | 0.9424 | 0.0576 |
-| 2025 secondary sensitivity | V2 | 0.8751 | **0.7586** | 0.8701 | **0.8007** | **0.9431** | **0.0569** |
-
-The retrospective evidence is mixed. Version 2 improved primary Accuracy, Macro F1, Weighted F1, and coverage over Version 1, but its routed accuracy was slightly lower and its misroute rate slightly higher. Both models weakened on the primary cohort relative to their shared 2024 results, and Version 2 showed material category-level routing risk for student loan and debt collection. The secondary sensitivity results were broadly comparable rather than decisively better.
+The shared 2024 comparison is a matched benchmark—not a new untouched V2 holdout—and the 2025 comparison is retrospective because Version 1 had already used that sample. Version 1 therefore remains the benchmark and Version 2 remains the frozen challenger.
 
 - [Shared 2024 V1-versus-V2 comparison](reports/v1_v2_2024_comparison.md)
 - [Retrospective 2025 V1-versus-V2 results](reports/v2_2025_retrospective_results.md)
@@ -177,119 +118,81 @@ The retrospective evidence is mixed. Version 2 improved primary Accuracy, Macro 
 
 ![Frozen V1 and V2 across the shared 2024 benchmark and retrospective 2025 cohorts](reports/figures/v1_v2_2025_retrospective_comparison.png)
 
-**Evidence status:** The 2024 comparison is a shared matched benchmark and the 2025 comparison is retrospective; independent Version 2 promotion evidence requires a new untouched period.
+## Temporal Validation
+
+| Version 1 evidence | Rows | Macro F1 | Coverage | Routed accuracy | Misroute rate |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Locked 2024 final internal test | 6,609 | 0.7671 | 77.05% | 95.03% | 4.97% |
+| **2025 primary leakage-resistant** | **30,156** | **0.7527** | **72.51%** | **92.03%** | **7.97%** |
+| 2025 secondary sensitivity | 49,225 | 0.7569 | 78.09% | 94.24% | 5.76% |
+
+Performance weakened on the primary 2025 cohort, which excludes overlap with both 2024 partitions, removes conflicting-label groups, and retains one row per repeated same-label text.
+
+The 49,225-row secondary cohort retains repeated texts and cross-year overlap, so it is sensitivity evidence only. The 2025 sample can no longer serve as an untouched holdout; any future model or policy change requires a **new untouched validation period**. See the [2025 protocol](reports/2025_validation_protocol.md) and [complete temporal results](reports/2025_holdout_results.md).
 
 ## Tech Stack
 
-- Python, Pandas, NumPy, SciPy, and Requests
-- Jupyter Notebook
-- Scikit-learn pipelines and TF-IDF
-- Logistic Regression, Multinomial Naive Bayes, and Linear SVM
-- PyTorch, Transformers, DistilBERT, and dynamic token padding
-- Matplotlib and Seaborn
-- `unittest` ingestion and routing-rule tests
-- Git, GitHub, and GitHub Actions
-- CFPB Consumer Complaint Database API
+- **Data and analysis:** Python, Pandas, NumPy, SciPy, CFPB API
+- **Classical ML:** scikit-learn, TF-IDF, Logistic Regression, Multinomial Naive Bayes, Linear SVM
+- **Transformer NLP:** PyTorch, Transformers, DistilBERT
+- **Evaluation:** group-aware cross-validation, temporal validation, selective routing, error analysis
+- **Visualization:** Matplotlib, Seaborn
+- **Engineering:** Git, GitHub Actions, `unittest`
 
-CI installs the pinned Version 1 requirements, validates Python syntax, verifies core imports, and discovers and runs mocked ingestion and routing-rule unit tests. It does not execute the data-dependent notebooks, retrain either model, reproduce local model artifacts, or access protected local CSV files.
+CI installs the pinned Version 1 requirements, checks syntax and imports, and runs mocked ingestion and routing-rule tests. It does not execute data-dependent notebooks, retrain either model, or reproduce local model artifacts.
 
-## Reproduce the Workflow
+## Reproduce
 
-1. Use Python 3.11.15 and install the Version 1 dependencies with `python -m pip install -r requirements.txt`.
-2. Run Notebooks 01 through 05 in numerical order, then run Notebook 07 for the locked out-of-time validation. Notebook 06 is a standalone course-submission notebook.
-3. Keep raw and processed CSV files and fitted model artifacts local and Git-ignored.
-4. Use the exact locked environment documented in `reports/2025_validation_protocol.md` for Notebook 07.
-5. For Version 2, create a separate environment from `requirements-v2.txt`, then run Notebooks 08 through 11 in numerical order. The ignored frozen artifacts from Notebook 09 are required for Notebooks 10 and 11.
+1. Use Python 3.11.15 and install Version 1 dependencies with `python -m pip install -r requirements.txt`.
+2. Run Notebooks 01–05 in order, then Notebook 07 for locked temporal validation; Notebook 06 is the standalone course-submission notebook.
+3. For Version 2, create a separate environment from `requirements-v2.txt` and run Notebooks 08–11 in order.
+4. Keep raw and processed data plus fitted/frozen model artifacts local and Git-ignored; Notebooks 10–11 require the local artifact created by Notebook 09.
+5. Use the exact locked environment in the [2025 validation protocol](reports/2025_validation_protocol.md) when reproducing Notebook 07.
 
-The pinned `requirements.txt` records the validated Version 1 Python 3.11.15 environment; Version 2 uses the separate pinned `requirements-v2.txt` environment. Frozen model artifacts remain local and Git-ignored. Exact pins improve reproducibility but do not guarantee identical behavior across operating systems or hardware.
+`requirements.txt` records the validated Version 1 Python 3.11.15 environment; `requirements-v2.txt` pins the separate Version 2 environment. Exact pins improve reproducibility but do not guarantee identical behavior across operating systems or hardware.
 
-## Current Status
+## Project Status
 
-Completed:
+**Completed:** leakage-safe V1 benchmark, selective-routing evaluation, 2025 temporal validation, frozen DistilBERT challenger, and matched V1/V2 evaluation.
 
-- 2024 ingestion, cleaning, EDA, leakage remediation, and group-aware model selection
-- locked 2024 internal classification and decision-score routing evaluation
-- deterministic mocked data-ingestion tests and routing-rule tests covering boundaries, validation, ties, non-finite values, and class-order safety
-- precommitted holdout protocol and reproducible 2024 entry gate
-- locked 2025 classification, routing, drift, and cohort-sensitivity evaluation
-- five-fold DistilBERT development training and frozen final Version 2 artifact
-- matched 2024 V1-versus-V2 classification, routing, and compute comparison
-- completed frozen retrospective 2025 V1-versus-V2 comparison, detailed results report, Version 2 model card, and aggregate figures
-
-Not implemented or approved:
-
-- deployed prediction API or batch-scoring service
-- operational dashboard or review queue
-- production monitoring, secure storage, and audit logging
-- scheduled retraining
-- privacy, security, compliance, governance, or stakeholder approval
-
-The fitted Version 1 pipeline and frozen Version 2 artifact remain local and Git-ignored; no operational inference service is included.
+**Scope:** offline decision-support research prototype. No deployed prediction API, operational review queue, production monitoring, automated retraining, or stakeholder-approved operating policy is included. Local data and fitted model artifacts remain Git-ignored.
 
 ## Limitations
 
-- Results use sampled public CFPB data, not institution-specific intake or the complete operational population, and daily API pagination may retain API-order sampling effects.
-- Published narratives and historical labels may contain ambiguity, label noise, and selection bias; exact normalized-text matching does not detect paraphrased near-duplicates.
-- Credit reporting dominates the data and strongly influences weighted metrics, while smaller categories and routed subsets have less-stable estimates.
-- Linear SVM decision scores and DistilBERT softmax scores and margins are uncalibrated model signals; the locked 256-token ceiling also truncates a material share of transformer inputs.
-- Routing thresholds are project assumptions, not approved operating limits; no fairness, calibration, workload, monitoring, or stakeholder-approved risk evidence is claimed.
-- Complaint narratives may contain sensitive information; operational use would require stronger privacy and security controls, access restrictions, retention rules, and governance.
-- The primary 2025 headline result showed weaker classification and routing behavior than the locked 2024 reference; the evaluated sample is exhausted as unbiased evidence, so future changes require a new untouched validation period.
+- Results use sampled public CFPB data rather than institution-specific intake or the complete operational population; daily API pagination may introduce sampling effects.
+- Historical narratives and labels may include ambiguity, selection bias, and label noise; exact normalized-text matching does not detect paraphrased near-duplicates.
+- Class imbalance favors the dominant credit-reporting category in weighted metrics, while smaller categories and routed subsets yield less-stable estimates.
+- V1 decision scores and V2 softmax scores and margins are uncalibrated signals; V2 also truncates a material share of narratives at 256 tokens, and both routing policies use project-defined rather than stakeholder-approved thresholds.
+- Operational use would require privacy, security, fairness, monitoring, access, retention, audit, compliance, and governance controls that this offline prototype does not implement.
+- The primary 2025 evidence weakened versus 2024 and is now exhausted as unbiased validation evidence; future changes require a new untouched period.
 
 ## Roadmap
 
-1. Use a new untouched period, currently planned as full-year 2026, to evaluate future model or policy changes and provide independent Version 2 promotion evidence.
-2. Review category-specific error costs and routing thresholds with operational stakeholders without tuning against the exhausted 2025 holdout.
-3. Evaluate probability calibration and refine category-specific human-review policies using development data and a newly protected validation design.
-4. Add privacy, security, fairness, explainability, monitoring, and drift controls before any production consideration.
-5. Design production APIs, dashboards, storage, retraining, and governance only after further validation and approval.
+1. Evaluate both frozen models and policies on a new untouched future period.
+2. Validate calibration and category-specific Human Review and risk policies with operational stakeholders under a newly protected evaluation design.
+3. Address privacy, security, monitoring, governance, and production architecture only after stronger independent evidence.
 
 ## Repository Guide
 
-| Path | Purpose |
+| Area | Purpose |
 | --- | --- |
-| `notebooks/01_data_download.ipynb` | Local-first CFPB data acquisition and validation |
-| `notebooks/02_eda_cleaning.ipynb` | Text cleaning and target preparation |
-| `notebooks/03_data_quality_product_distribution.ipynb` | Data-quality and distribution analysis |
-| `notebooks/04_sklearn_baseline_model.ipynb` | Leakage-safe comparison, selection, and final Version 1 evaluation |
-| `notebooks/05_decision_score_routing.ipynb` | Development OOF threshold selection and final-test routing analysis |
-| `notebooks/06_final_project_submission.ipynb` | Standalone course submission notebook |
-| `notebooks/07_2025_out_of_time_validation.ipynb` | Locked 2024 reproduction gate and 2025 out-of-time evaluation |
-| `notebooks/08_v2_transformer_data_preparation.ipynb` | Version 2 leakage-safe data, tokenization, and maximum-length audit |
-| `notebooks/09_v2_distilbert_training.ipynb` | Five-fold DistilBERT development training and frozen local artifact |
-| `notebooks/10_v1_v2_champion_challenger_comparison.ipynb` | Shared 2024 V1-versus-V2 benchmark and compute comparison |
-| `notebooks/11_v2_2025_retrospective_comparison.ipynb` | Locked retrospective 2025 V1-versus-V2 comparison |
-| `reports/2025_validation_protocol.md` | Precommitted two-phase holdout protocol |
-| `reports/2025_holdout_results.md` | Detailed 2025 cohort, classification, routing, and drift results |
-| `reports/figures/2025_confusion_matrix.png` | Primary 2025 row-normalized confusion matrix |
-| `reports/figures/2024_vs_2025_comparison.png` | Aggregate reference and cohort comparison |
-| `reports/results_summary.md` | Verified 2024 reference and 2025 out-of-time results |
-| `reports/model_card.md` | Intended use, limitations, oversight, and monitoring guidance |
-| `docs/v2_experiment_plan.md` | Precommitted Version 2 experiment, routing, comparison, and promotion rules |
-| `reports/v2_data_manifest.md` | Frozen Version 2 data, folds, label map, and token-length decision |
-| `reports/v2_development_results.md` | Development OOF and fold-training results |
-| `reports/v2_model_manifest.md` | Frozen Version 2 model, tokenizer, environment, and fingerprints |
-| `reports/v1_v2_2024_comparison.md` | Shared 2024 champion-challenger comparison |
-| `reports/v2_2025_retrospective_protocol.md` | Protocol committed before retrospective Version 2 scoring |
-| `reports/v2_2025_retrospective_results.md` | Retrospective 2025 classification, routing, and drift comparison |
-| `reports/v2_model_card.md` | Frozen Version 2 intended use, evidence, limitations, and governance boundaries |
-| `docs/system_design.md` | Completed prototype components and future architecture |
-| `docs/portfolio_summary.md` | Portfolio description and resume-ready bullets |
-| `src/download_data.py` | Local-first CFPB ingestion, API retry handling, validation, and local save utilities |
-| `src/routing_rules.py` | Tested routing decision logic |
-| `tests/test_download_data.py` | Mocked API, retry, validation, local-first, and output-path tests |
-| `tests/test_routing_rules.py` | Routing boundary, validation, and class-order tests |
-| `requirements.txt` | Pinned Version 1 Python 3.11.15 environment |
-| `requirements-v2.txt` | Separate pinned Version 2 transformer environment |
+| `notebooks/01–07` | V1 data, modeling, routing, and temporal validation |
+| `notebooks/08–11` | DistilBERT challenger and V1/V2 comparison |
+| `src/` | Reusable ingestion and routing logic |
+| `tests/` | Mocked ingestion and routing-rule tests |
+| `reports/` | Evaluation results, figures, protocols, and model cards |
+| `docs/` | Business context, methodology, system design, and portfolio notes |
+| `requirements.txt` / `requirements-v2.txt` | Separate pinned V1 and V2 environments |
 
 Raw and processed CSV files, complaint narratives, row-level predictions, and fitted model artifacts remain local and Git-ignored.
 
-## Documentation
+## Documentation and Evidence
 
-- [Complete NLP Project Report (PDF)](Financial_Complaint_Auto_Routing_NLP_Project_Report.pdf)
-- [Business case](docs/business_case.md)
-- [Data decisions and quality notes](docs/data_decisions.md)
-- [Data-ingestion design](docs/data_ingestion.md)
-- [Modeling plan and completed Version 1 workflow](docs/modeling_plan.md)
+- [Complete Project Report (PDF)](Financial_Complaint_Auto_Routing_NLP_Project_Report.pdf)
+- [Business case](docs/business_case.md) and [modeling methodology](docs/modeling_plan.md)
+- [2024 and 2025 results summary](reports/results_summary.md)
+- [2025 temporal evaluation](reports/2025_holdout_results.md)
+- [Shared 2024 and retrospective 2025 V1/V2 comparison](reports/v1_v2_2024_comparison.md) ([2025 results](reports/v2_2025_retrospective_results.md))
+- [Version 1 model card](reports/model_card.md)
+- [Version 2 model card](reports/v2_model_card.md)
 - [System design](docs/system_design.md)
-- [Portfolio summary](docs/portfolio_summary.md)
